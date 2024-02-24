@@ -1,4 +1,4 @@
-# fundamentals-computing
+# Fundamentals of Computing
 
 Coding exercises from the fundamentals of computing courses from Rice University
 
