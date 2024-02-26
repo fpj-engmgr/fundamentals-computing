@@ -50,3 +50,15 @@ print line2, merge2
 line3 = [2, 0, 2, 2, 4, 0, 4, 8, 0]
 merge3 = merge(line3)
 print line3, merge3
+
+"""
+Process for doing the merge on a line of 2048
+
+- Initialize return_line of tiles to an empty list
+- Set return tile index to zero
+- Step through each tile of the input list
+  - For a non-zero tile
+    - append tile to return_line
+    - if it matches the previous tile (return tile index > 0)
+      - double the previous tile and set 
+"""
