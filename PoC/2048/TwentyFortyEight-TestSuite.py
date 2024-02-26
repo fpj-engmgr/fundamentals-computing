@@ -18,15 +18,16 @@ def run_suite(game_class):
     # add tests using suite.run_test(....) here
 
     # test the initial configuration of the board using the str method
-    suite.run_test(str(game), str([0]), "Test #0: init")
+    suite.run_test(str(game), "[[0, 0, 0, 0, 0][0, 0, 0, 0, 0][0, 0, 0, 0, 0][0, 0, 0, 0, 0]]", "Test #0: init")
 
+    # test basic methods for the class
+    suite.run_test(game.get_grid_height(), 4, "Test #1: get_grid_height")
+    suite.run_test(game.get_grid_width(), 5, "Test #2: get_grid_width")
+    
+    # set a tile value and check it afterwards
+    suite.run_test(game.set_tile(2, 3, 8), None, "Test #3: set_tile")
+    suite.run_test(game.get_tile(2, 3), 8, "Test #4: get_tile")
     # check the str and get_num_seeds methods
-#    config1 = [0, 0, 1, 1, 3, 5, 0]    
-#    game.set_board(config1)   
-#    suite.run_test(str(game), str([0, 5, 3, 1, 1, 0, 0]), "Test #1a: str")
-#    suite.run_test(game.get_num_seeds(1), config1[1], "Test #1b: get_num_seeds")
-#    suite.run_test(game.get_num_seeds(3), config1[3], "Test #1c: get_num_seeds")
-#    suite.run_test(game.get_num_seeds(5), config1[5], "Test #1d: get_num_seeds")    
-#    
+    
     # report number of tests and failures
     suite.report_results()
