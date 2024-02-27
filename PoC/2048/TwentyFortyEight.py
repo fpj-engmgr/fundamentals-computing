@@ -3,9 +3,13 @@ Clone of 2048 game.
 """
 
 #import poc_2048_gui
+#import user51_3QVviOCgxh_0 as poc_2048_gui
+
 import random
+import math
+
 # test suite
-import user51_6HKgraqrNV_4 as poc_test_suite
+#import user51_6HKgraqrNV_4 as poc_test_suite
 
 # Directions, DO NOT MODIFY
 UP = 1
@@ -89,9 +93,8 @@ def search_grid(search_val, grid, start_cell, grid_height, grid_width):
             return (row, col)
     # none found
     return (-1, -1)
-
-    
-
+# 
+# Main game class for 2048
 
 class TwentyFortyEight:
     """
@@ -118,32 +121,23 @@ class TwentyFortyEight:
         self._grid = [[0 for dummy_col in range(self._width)] 
                          for dummy_row in range(self._height)]
         # add 2 new tiles
-        success_check1 = self.new_tile()
-        if success_check1:
-            success_check2 = self.new_tile()
+        self.new_tile()
+        self.new_tile()
         # we should have 2 new tiles
-        if success_check2:
-            return True
-        # we failed...
-        return False
 
     def __str__(self):
         """
         Return a string representation of the grid for debugging.
         """
-        # create a string to give a list of lists
-        print_string = "["
-        
+        # create a string for each row
+
         for row in range(self._height):
-            print_string = print_string + "["
-            for col in range(self._width):
-                if col == 0:
-                    print_string = print_string + str(self._grid[row][col])
-                else:
-                    print_string = print_string + ", " + str(self._grid[row][col])
-            print_string = print_string + "]"
-            
-        print_string = print_string +"]"
+            if row == 0:
+                print_string = "[" + str(self._grid[row])
+            else:
+                print_string = print_string + "\n " + str(self._grid[row])
+        # add closing bracket
+        print_string = print_string + "]"
         
         return print_string
 
@@ -164,8 +158,62 @@ class TwentyFortyEight:
         Move all tiles in the given direction and add
         a new tile if any tiles moved.
         """
-        # replace with your code
-        pass
+        # Basic thoughts:
+        # - in direction create lists with [0] being the target of the direction
+        # - call merge for each list and set move flag, if the last element is 0
+        # - reassemble the grid based on the direction
+        # - if move flag is set add a new tile
+        move_flag = False
+        # get the movement offset
+        offset = OFFSETS.get(direction)
+        # select starting cell based on direction:
+        # - default to upper left hand corner (0, 0)
+        # - if down (-1, 0) then start lower left hand corner (height - 1, 0)
+        # - if right (0, -1) then start upper right hand corner (0, width - 1)
+        start_cell = [0, 0]
+        #
+        if offset[0] == -1:
+            start_cell[0] = self._height - 1
+        #
+        if offset[1] == -1:
+            start_cell[1] = self._width -1
+        # set ranges based on vertical or horizontal traversal
+        # - num_steps: number of elements to build a line to move
+        # - num_lines: number of lines to process to complete the grid
+        if (direction == UP) or (direction == DOWN):
+            num_steps = self._height
+            num_lines = self._width
+        else:
+            num_steps = self._width
+            num_lines = self._height
+        # loop for each line
+        for line_num in range(num_lines):
+            move_line = []
+            # loop to build the line to process
+            for step in range(num_steps):
+                # calculate the row and column in the grid
+                row = start_cell[0] + step * offset[0] + line_num * int(math.fabs(offset[1]))
+                col = start_cell[1] + step * offset[1] + line_num * int(math.fabs(offset[0]))
+                # add this cell to move_line
+                move_line.append(self._grid[row][col])
+            # the line is build, so now do the merge
+            new_line = merge(move_line)
+            # see if the lines differ
+            if new_line == move_line:
+                continue
+            else:
+                move_flag = True
+            # put this line back into the grid
+            for step in range(num_steps):
+                # calculate the row and column in the grid
+                row = start_cell[0] + step * offset[0] + line_num * int(math.fabs(offset[1]))
+                col = start_cell[1] + step * offset[1] + line_num * int(math.fabs(offset[0]))
+                # 
+                self._grid[row][col] = new_line[step]
+        # if something was moved, add a tile
+        if move_flag:
+            self.new_tile()
+        # that's all
 
     def new_tile(self):
         """
@@ -216,37 +264,57 @@ class TwentyFortyEight:
         return self._grid[row][col]
 
 
-#poc_2048_gui.run_gui(TwentyFortyEight(4, 4))
+#game = TwentyFortyEight(4, 4)
+#
+#poc_2048_gui.run_gui(game)
 
 # Test the methods!
+#print "Test #0: __init__"
+#obj = TwentyFortyEight(4, 4)
+#print obj
+#
+#print "Test #1: set_tile"
+#obj.set_tile(0, 0, 2)
+#obj.set_tile(0, 1, 4)
+#obj.set_tile(0, 2, 8)
+#obj.set_tile(0, 3, 16)
+#obj.set_tile(1, 0, 16)
+#obj.set_tile(1, 1, 8)
+#obj.set_tile(1, 2, 4)
+#obj.set_tile(1, 3, 2)
+#obj.set_tile(2, 0, 0)
+#obj.set_tile(2, 1, 0)
+#obj.set_tile(2, 2, 8)
+#obj.set_tile(2, 3, 16)
+#obj.set_tile(3, 0, 0)
+#obj.set_tile(3, 1, 0)
+#obj.set_tile(3, 2, 4)
+#obj.set_tile(3, 3, 2)
+#
+#print obj
+#
+## print "Test #2: move(UP)"
+#obj.move(UP)
+#print obj
 
-game1 = TwentyFortyEight(4, 5)
-print game1
+#game1.reset()
+#print game1
+#
+#print(" Moving tiles up")
+#game1.move(UP)
+#print game1
+#
+#print(" Moving tiles left")
+#game1.move(LEFT)
+#print game1
+#
+#print(" Moving tiles down")
+#game1.move(DOWN)
+#print game1
+#
+#print(" Moving tiles right")
+#game1.move(RIGHT)
+#print game1
 
-game1.reset()
-print game1
 
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-game1.new_tile()
-print game1
-
-print game1.get_grid_height(), game1.get_grid_width
-
-poc_test_suite.run_suite(TwentyFortyEight)
+#poc_test_suite.run_suite(TwentyFortyEight)
