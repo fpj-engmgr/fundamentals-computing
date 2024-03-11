@@ -5,7 +5,7 @@ Goal: Move as many seeds from given houses into the store
 
 In GUI, you make ask computer AI to make move or click to attempt a legal move
 """
-
+import user51_XEp6rEGgwW_8 as tst
 
 class SolitaireMancala:
     """
@@ -26,7 +26,14 @@ class SolitaireMancala:
         """
         for house_num in range(6):
             self.houses.append(configuration[house_num + 1])
-    
+            
+    def reset_board(self, configuration):
+        """
+        Helper method for testing...take a  config and reset the board to it
+        """
+        for house_num in range(len(self.houses)):
+            self.houses[house_num] = configuration[house_num]
+            
     def __str__(self):
         """
         Return string representation for Mancala board
@@ -96,15 +103,6 @@ class SolitaireMancala:
         Not used in GUI version, only for machine testing
         """
         move_list = []
-#        print move_list
-#        house_num = self.choose_move()
-#        print "House num :", str(house_num)
-#        print self.houses
-#        if house_num > 0:
-#            self.apply_move(house_num)
-#        print self.houses
-#        move_list.append(house_num)
-#        print self.is_game_won()
         while True:
             if self.is_game_won():
                 print "We've won!"
@@ -118,31 +116,32 @@ class SolitaireMancala:
                 return move_list
         return move_list
  
+tst.run_suite(SolitaireMancala)
 
 # Create tests to check the correctness of your code
-
-def test_mancala():
-    """
-    Test code for Solitaire Mancala
-    """
-    
-    my_game = SolitaireMancala()
-    print "Testing init - Computed:", my_game, "Expected: [0]"
-    
-    config1 = [0, 0, 1, 1, 3, 5, 0]    
-    my_game.set_board(config1)   
-    
-    print "Testing set_board - Computed:", str(my_game), "Expected:", str([0, 5, 3, 1, 1, 0, 0])
-    print "Testing get_num_seeds - Computed:", my_game.get_num_seeds(1), "Expected:", config1[1]
-    print "Testing get_num_seeds - Computed:", my_game.get_num_seeds(3), "Expected:", config1[3]
-    print "Testing get_num_seeds - Computed:", my_game.get_num_seeds(5), "Expected:", config1[5]
-
-    # add more tests here
-    print "Testing a move plan - ", str(my_game.plan_moves())
-    print "The ending board is ", str(my_game)
-    print "Has the game been won? ", str(my_game.is_game_won())
-    
-test_mancala()
+#
+#def test_mancala():
+#    """
+#    Test code for Solitaire Mancala
+#    """
+#    
+#    my_game = SolitaireMancala()
+#    print "Testing init - Computed:", my_game, "Expected: [0]"
+#    
+#    config1 = [0, 0, 1, 1, 3, 5, 0]    
+#    my_game.set_board(config1)   
+#    
+#    print "Testing set_board - Computed:", str(my_game), "Expected:", str([0, 5, 3, 1, 1, 0, 0])
+#    print "Testing get_num_seeds - Computed:", my_game.get_num_seeds(1), "Expected:", config1[1]
+#    print "Testing get_num_seeds - Computed:", my_game.get_num_seeds(3), "Expected:", config1[3]
+#    print "Testing get_num_seeds - Computed:", my_game.get_num_seeds(5), "Expected:", config1[5]
+#
+#    # add more tests here
+#    print "Testing a move plan - ", str(my_game.plan_moves())
+#    print "The ending board is ", str(my_game)
+#    print "Has the game been won? ", str(my_game.is_game_won())
+#    
+#test_mancala()
 
 
 # Import GUI code once you feel your code is correct
