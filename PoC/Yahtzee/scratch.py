@@ -1,11 +1,3 @@
-"""
-Planner for Yahtzee
-Simplifications:  only allow discard and roll, only score against upper level
-"""
-
-# Used to increase the timeout, if necessary
-import codeskulptor
-codeskulptor.set_timeout(20)
 
 def gen_all_sequences(outcomes, length):
     """
@@ -24,32 +16,13 @@ def gen_all_sequences(outcomes, length):
         answer_set = temp_set
     return answer_set
 
-
-def score(hand):
+def gen_sorted_sequences(outcomes, length):
     """
-    Compute the maximal score for a Yahtzee hand according to the
-    upper section of the Yahtzee score card.
-
-    hand: full yahtzee hand
-
-    Returns an integer score 
-    """
-    return 0
-
-
-def expected_value(held_dice, num_die_sides, num_free_dice):
-    """
-    Compute the expected value based on held_dice given that there
-    are num_free_dice to be rolled, each with num_die_sides.
-
-    held_dice: dice that you will hold
-    num_die_sides: number of sides on each die
-    num_free_dice: number of dice to be rolled
-
-    Returns a floating point expected value
-    """
-    return 0.0
-
+    Function that creates all sorted sequences via gen_all_sequences
+    """    
+    all_sequences = gen_all_sequences(outcomes, length)
+    sorted_sequences = [tuple(sorted(sequence)) for sequence in all_sequences]
+    return set(sorted_sequences)
 
 def gen_all_holds(hand):
     """
@@ -59,7 +32,7 @@ def gen_all_holds(hand):
 
     Returns a set of tuples, where each tuple is dice to hold
     """
-    # initialize the set
+    # initalize the set
     hold_set = set()
     # hold none
     no_hold = ()
@@ -101,41 +74,31 @@ def gen_all_holds(hand):
     return hold_set
 
 
+num_die_sides = 6
+hand = (1, 1, 1, 5, 6)
+
+hold_one = gen_all_sequences(hand, 1)
+hold_two = gen_all_sequences(hand, 2)
+hold_thr = gen_all_sequences(hand, 3)
+
+print "Unsorted ---"
+print "One    : ", len(hold_one), hold_one
+print "Two    : ", len(hold_two), hold_two
+print "Three  : ", len(hold_thr), hold_thr
+
+sort_one = gen_sorted_sequences(hand, 1)
+sort_two = gen_sorted_sequences(hand, 2)
+sort_thr = gen_sorted_sequences(hand, 3)
+
+print "Sorted ---"
+print "One    : ", len(sort_one), sort_one
+print "Two    : ", len(sort_two), sort_two
+print "Three  : ", len(sort_thr), sort_thr
 
 
-def strategy(hand, num_die_sides):
-    """
-    Compute the hold that maximizes the expected value when the
-    discarded dice are rolled.
-
-    hand: full yahtzee hand
-    num_die_sides: number of sides on each die
-
-    Returns a tuple where the first element is the expected score and
-    the second element is a tuple of the dice to hold
-    """
-    return (0.0, ())
+all_holds = gen_all_holds(hand)
 
 
-def run_example():
-    """
-    Compute the dice to hold and expected score for an example hand
-    """
-    num_die_sides = 6
-    hand = (1, 1, 1, 5, 6)
-    hand_score, hold = strategy(hand, num_die_sides)
-    print "Best strategy for hand", hand, "is to hold", hold, "with expected score", hand_score
-    
-    
-run_example()
-
-
-#import poc_holds_testsuite
-#poc_holds_testsuite.run_suite(gen_all_holds)
-                                       
-    
-    
-    
-
-
-
+print "Holds ---"
+print "Number possible : ", len(all_holds)
+print all_holds
