@@ -18,15 +18,25 @@ class ClickerState:
     """
     Simple class to keep track of the game state.
     """
-    
+    # init note:
+    # _history: (time, upgrade bought, cost of upgrade, total cookies)
+    #
     def __init__(self):
-        pass
+        self._total_cookies = 0.0
+        self._current_cookies = 0.0
+        self._time = 0.0
+        self._cps = 0.0
+        self._history = [(0.0, None, 0.0, 0.0)]
         
     def __str__(self):
         """
         Return human readable state
         """
-        return "not yet implemented"
+        ret_str = "Time: " + str(self._time) + " Cps: " + str(self._cps)
+        ret_str = ret_str + " Current Cookies: " + str(self_current_cookies)
+        ret_str = ret_str + " Total Cookies: " + str(self._total_cookies)
+        
+        return ret_str
         
     def get_cookies(self):
         """
@@ -35,7 +45,7 @@ class ClickerState:
         
         Should return a float
         """
-        return 0.0
+        return self._current_cookies
     
     def get_cps(self):
         """
@@ -43,7 +53,7 @@ class ClickerState:
 
         Should return a float
         """
-        return 0.0
+        return self._cps
     
     def get_time(self):
         """
@@ -51,7 +61,7 @@ class ClickerState:
 
         Should return a float
         """
-        return 0.0
+        return self._time
     
     def get_history(self):
         """
@@ -65,6 +75,7 @@ class ClickerState:
         Should return a copy of any internal data structures,
         so that they will not be modified outside of the class.
         """
+        
         return []
 
     def time_until(self, cookies):
@@ -74,7 +85,10 @@ class ClickerState:
 
         Should return a float with no fractional part
         """
-        return 0.0
+        if self._current_cookies >= cookies:
+            return 0.0
+        else:
+            return float(int((cookies - self._current_cookies)/self._cps))
     
     def wait(self, time):
         """
@@ -82,15 +96,27 @@ class ClickerState:
 
         Should do nothing if time <= 0.0
         """
-        pass
+        if time > 0.0:
+            self._time += time
+            self._total_cookies += time * self._cps
+            self._current_cookies += time * self._cps
     
     def buy_item(self, item_name, cost, additional_cps):
         """
-        Buy an item and update state
+        Buy an item and update state for
+        _current_cookies
+        _cps
+        _history
 
         Should do nothing if you cannot afford the item
         """
-        pass
+        if cost <= self._current_cookies:
+            self._current_cookies -= cost
+            self._cps += additional_cps
+            self._history.append(tuple(self._time,
+                                       item_name,
+                                       cost,
+                                       self._total_cookies))
    
     
 def simulate_clicker(build_info, duration, strategy):
