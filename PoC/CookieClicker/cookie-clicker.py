@@ -33,9 +33,9 @@ class ClickerState:
         """
         Return human readable state
         """
-        ret_str = "Time: " + str(self._time) + " Cps: " + str(self._cps)
-        ret_str = ret_str + " Current Cookies: " + str(self._current_cookies)
-        ret_str = ret_str + " Total Cookies: " + str(self._total_cookies)
+        ret_str = "\nTime: \t\t\t" + str(self._time) + "\nCurrent Cookies:\t" + str(self._current_cookies)
+        ret_str = ret_str + "\nTotal Cookies:\t\t" + str(self._total_cookies)
+        ret_str = ret_str + "\nCps:\t\t\t" + str(self._cps) 
         
         return ret_str
         
@@ -133,37 +133,46 @@ def simulate_clicker(build_info, duration, strategy):
     # start the simulation loop
     current_time = clicker_state.get_time()
     #
-    while current_time < SIM_TIME:
+    while current_time < duration:
         # call strategy to determine what to purchase next
         next_item = strategy(clicker_state.get_cookies(),
                              clicker_state.get_cps(),
                              clicker_state.get_history(),
-                             SIM_TIME - current_time,
+                             duration - current_time,
                              local_build_info)
         # if None is returned, then we're done
         if next_item == None:
+            clicker_state.wait(duration - current_time)
             break
-        # get the cost of the item to be purchased
-        item_cost = local_build_info.get_cost(next_item)
+        # get the cost of the item to be purchased and cookies on hand
+        item_cost = local_build_info.get_cost(next_item)        
         # figure how long until we can buy the item
         wait_until = clicker_state.time_until(item_cost)
-        # wait until the time that we can buy the item
-        if (current_time + wait_until) < SIM_TIME:
+        # wait until we have the cookies
+        if (current_time + wait_until) <= duration:
             clicker_state.wait(wait_until)
+            # and get our cookies
+            current_cookies = clicker_state.get_cookies()
+            # keep buying this item as long as we have cookies
+            while current_cookies >= item_cost:
+                # buy the item
+                clicker_state.buy_item(next_item,
+                                       item_cost,
+                                       local_build_info.get_cps(next_item))
+                # update the item information
+                local_build_info.update_item(next_item)
+                # update our current cookies on hand
+                current_cookies = clicker_state.get_cookies()
+                # and the item cost, as we just update it
+                item_cost = local_build_info.get_cost(next_item)
+            # close the loop
         else:
-            clicker_state.wait(SIM_TIME - current_time)
+            # we ran out of time, so get the last cookies and get out
+            clicker_state.wait(duration - current_time)
             break
-        # we can buy the item
-        clicker_state.buy_item(next_item,
-                               item_cost,
-                               local_build_info.get_cps(next_item))
-        # update the item information
-        local_build_info.update_item(next_item)
-        # get the current sim time
+        # get the current sim time to continue the loop
         current_time = clicker_state.get_time()
         # that's the loop
-#        print "Current time : ", current_time, local_build_info.get_cost(next_item)
-    
     return clicker_state
 
 
@@ -193,19 +202,74 @@ def strategy_cheap(cookies, cps, history, time_left, build_info):
     """
     Always buy the cheapest item you can afford in the time left.
     """
-    return None
+    # set lowest item cost to the max and low-cost item to None
+    item_low_cost = float('inf')
+    lc_item = None
+    # go through the list of buildable items and find the lowest cost one
+    for bld_item in build_info.build_items():
+        # get the item's current cost
+        item_cost = build_info.get_cost(bld_item)
+        # if it's lower than the current low save the item
+        if item_cost < item_low_cost:
+            item_low_cost = item_cost
+            lc_item = bld_item
+    # check to see if we have enough time left to build this item
+    if (time_left * cps) >= item_low_cost:
+        # yes, so return this item
+        return lc_item
+    else:
+        # no - return None
+        return None
 
 def strategy_expensive(cookies, cps, history, time_left, build_info):
     """
     Always buy the most expensive item you can afford in the time left.
     """
-    return None
+    # set highest item cost to the min and high-cost item to None
+    item_high_cost = 0.0
+    hc_item = None
+    # go through the list of buildable items and find the highest cost one
+    for bld_item in build_info.build_items():
+        # get the item's current cost
+        item_cost = build_info.get_cost(bld_item)
+        # if it's higher that the current high save the item and fits in the time
+        max_cookies = cookies + (cps * time_left)
+        if ((item_cost <= max_cookies) and (item_cost > item_high_cost)):
+            item_high_cost = item_cost
+            hc_item = bld_item
+    # check to see if we have enough time left to build this item
+    return hc_item
 
 def strategy_best(cookies, cps, history, time_left, build_info):
     """
     The best strategy that you are able to implement.
+    
+    Optimized strategy focuses on the maximum impact on cps per cookie
+    spent for the time remaining in the simulation.
     """
-    return None
+    # initialize the Cookies per Second (cps) impact and the cps winner
+    cps_impact = 0.0
+    cps_item_cost = 0.0
+    cps_item = None
+    # go through the list of buildable items and find the highest impact one
+    for bld_item in build_info.build_items():
+        # get the items current cost
+        item_cost = build_info.get_cost(bld_item)
+        item_cps = build_info.get_cps(bld_item)
+        # let's use cps per cookie spent as impact for right now
+        item_impact = item_cps / item_cost
+        # figure out the impact that the item would have
+        if item_impact > cps_impact:
+            cps_impact = item_impact
+            cps_item_cost = item_cost
+            cps_item = bld_item
+    # check to see if we have enough time left to build this item
+    if (time_left * cps) >= cps_item_cost:
+        # yes, so return this item
+        return cps_item
+    else:
+        # no - return None
+        return None
         
 def run_strategy(strategy_name, time, strategy):
     """
@@ -213,6 +277,7 @@ def run_strategy(strategy_name, time, strategy):
     """
     state = simulate_clicker(provided.BuildInfo(), time, strategy)
     print strategy_name, ":", state
+    print state.get_history()
 
     # Plot total cookies over time
 
@@ -227,13 +292,16 @@ def run():
     """
     Run the simulator.
     """    
-    run_strategy("Cursor", SIM_TIME, strategy_cursor_broken)
 #    run_strategy(None, SIM_TIME, strategy_none)
-
-    # Add calls to run_strategy to run additional strategies
-    # run_strategy("Cheap", SIM_TIME, strategy_cheap)
-    # run_strategy("Expensive", SIM_TIME, strategy_expensive)
-    # run_strategy("Best", SIM_TIME, strategy_best)
+#    run_strategy("Cursor", 15.0, strategy_cursor_broken)
+#    state = simulate_clicker(provided.BuildInfo({'Cursor': [15.0, 50.0]}, 1.15), 16.0, strategy_cursor_broken)
+#    print state
+#    item = strategy_expensive(500000.0, 1.0, [(0.0, None, 0.0, 0.0)], 5.0, provided.BuildInfo({'A': [5.0, 1.0], 'C': [50000.0, 3.0], 'B': [500.0, 2.0]}, 1.15))
+#    print "expensive item is ", item
+#    # Add calls to run_strategy to run additional strategies
+    run_strategy("Expensive", SIM_TIME, strategy_expensive)
+#    run_strategy("Cheap", SIM_TIME, strategy_cheap)
+#    run_strategy("Best", SIM_TIME, strategy_best)
     
 run()
     
