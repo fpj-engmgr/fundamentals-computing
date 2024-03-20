@@ -3,6 +3,7 @@ Cookie Clicker Simulator
 """
 
 import simpleplot
+import math
 
 # Used to increase the timeout, if necessary
 import codeskulptor
@@ -11,8 +12,8 @@ codeskulptor.set_timeout(20)
 import poc_clicker_provided as provided
 
 # Constants
-#SIM_TIME = 10000000000.0
-SIM_TIME = 1000000.0
+SIM_TIME = 10000000000.0
+#SIM_TIME = 1000000.0
 
 class ClickerState:
     """
@@ -25,7 +26,7 @@ class ClickerState:
         self._total_cookies = 0.0
         self._current_cookies = 0.0
         self._time = 0.0
-        self._cps = 0.0
+        self._cps = 1.0
         self._history = [(0.0, None, 0.0, 0.0)]
         
     def __str__(self):
@@ -33,7 +34,7 @@ class ClickerState:
         Return human readable state
         """
         ret_str = "Time: " + str(self._time) + " Cps: " + str(self._cps)
-        ret_str = ret_str + " Current Cookies: " + str(self_current_cookies)
+        ret_str = ret_str + " Current Cookies: " + str(self._current_cookies)
         ret_str = ret_str + " Total Cookies: " + str(self._total_cookies)
         
         return ret_str
@@ -76,7 +77,7 @@ class ClickerState:
         so that they will not be modified outside of the class.
         """
         
-        return []
+        return list(self._history)
 
     def time_until(self, cookies):
         """
@@ -86,10 +87,12 @@ class ClickerState:
         Should return a float with no fractional part
         """
         if self._current_cookies >= cookies:
-            return 0.0
+            wait_time = 0.0
         else:
-            return float(int((cookies - self._current_cookies)/self._cps))
-    
+            wait_time = int(math.ceil((cookies - self._current_cookies)/self._cps)) * 1.0
+        #
+        return wait_time
+        
     def wait(self, time):
         """
         Wait for given amount of time and update state
@@ -100,6 +103,7 @@ class ClickerState:
             self._time += time
             self._total_cookies += time * self._cps
             self._current_cookies += time * self._cps
+        #
     
     def buy_item(self, item_name, cost, additional_cps):
         """
@@ -113,10 +117,8 @@ class ClickerState:
         if cost <= self._current_cookies:
             self._current_cookies -= cost
             self._cps += additional_cps
-            self._history.append(tuple(self._time,
-                                       item_name,
-                                       cost,
-                                       self._total_cookies))
+            buy_record = (self._time, item_name, cost, self._total_cookies)
+            self._history.append(buy_record)
    
     
 def simulate_clicker(build_info, duration, strategy):
@@ -125,9 +127,44 @@ def simulate_clicker(build_info, duration, strategy):
     duration with the given strategy.  Returns a ClickerState
     object corresponding to the final state of the game.
     """
-
-    # Replace with your code
-    return ClickerState()
+    # make a clone of the build_info object and create a ClickerState object
+    local_build_info = build_info.clone()
+    clicker_state = ClickerState()
+    # start the simulation loop
+    current_time = clicker_state.get_time()
+    #
+    while current_time < SIM_TIME:
+        # call strategy to determine what to purchase next
+        next_item = strategy(clicker_state.get_cookies(),
+                             clicker_state.get_cps(),
+                             clicker_state.get_history(),
+                             SIM_TIME - current_time,
+                             local_build_info)
+        # if None is returned, then we're done
+        if next_item == None:
+            break
+        # get the cost of the item to be purchased
+        item_cost = local_build_info.get_cost(next_item)
+        # figure how long until we can buy the item
+        wait_until = clicker_state.time_until(item_cost)
+        # wait until the time that we can buy the item
+        if (current_time + wait_until) < SIM_TIME:
+            clicker_state.wait(wait_until)
+        else:
+            clicker_state.wait(SIM_TIME - current_time)
+            break
+        # we can buy the item
+        clicker_state.buy_item(next_item,
+                               item_cost,
+                               local_build_info.get_cps(next_item))
+        # update the item information
+        local_build_info.update_item(next_item)
+        # get the current sim time
+        current_time = clicker_state.get_time()
+        # that's the loop
+#        print "Current time : ", current_time, local_build_info.get_cost(next_item)
+    
+    return clicker_state
 
 
 def strategy_cursor_broken(cookies, cps, history, time_left, build_info):
@@ -191,6 +228,7 @@ def run():
     Run the simulator.
     """    
     run_strategy("Cursor", SIM_TIME, strategy_cursor_broken)
+#    run_strategy(None, SIM_TIME, strategy_none)
 
     # Add calls to run_strategy to run additional strategies
     # run_strategy("Cheap", SIM_TIME, strategy_cheap)
