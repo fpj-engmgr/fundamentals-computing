@@ -123,8 +123,6 @@ class Apocalypse(poc_grid.Grid):
             visited.set_full(entity[0], entity[1])
             distance_field[entity[0]][entity[1]] = 0
         #
-        print visited
-        #
         while len(boundary) > 0:
             current_cell = boundary.dequeue()
             # Zombies cannot travel diagonally, so four neighbors only
@@ -158,7 +156,33 @@ class Apocalypse(poc_grid.Grid):
         Function that moves zombies towards humans, no diagonal moves
         are allowed
         """
-        pass
+        # get the maximum distance
+        max_distance = self.get_grid_height() + self.get_grid_width()
+        # create a list of new locations
+        new_zombie_list = poc_queue.Queue()
+        # step through our queue of zombies
+        for zombie in self._zombie_list:
+            human_dist = max_distance
+            move_cells = []
+            # look at the four neighbors for the zombie's location
+            for neighbor_cell in poc_grid.Grid.four_neighbors(self, zombie[0], zombie[1]):
+                cell_dist = human_distance_field[neighbor_cell[0]][neighbor_cell[1]]
+                # if we get a new shortest distance make that preferred
+                if cell_dist < human_dist:
+                    human_dist = cell_dist
+                    move_cells = [neighbor_cell]
+                # if it's the same distance add this neighbor for random selection
+                elif cell_dist == human_dist:
+                    move_cells.append(neighbor_cell)
+            # let's choose randomly from among potential moves
+            move_target = random.choice(move_cells)
+            new_zombie_list.enqueue(move_target)
+        # update the zombie list now that we're done
+        self._zombie_list = []
+        #
+        for dummy_idx in range(len(new_zombie_list)):
+            self._zombie_list.append(new_zombie_list.dequeue())
+        # that's all there is to it
 
 # Start up gui for simulation - You will need to write some code above
 # before this will work without errors
@@ -191,9 +215,10 @@ class Apocalypse(poc_grid.Grid):
 #print "Number of zombies : ", apocalyptica.num_zombies()
 #print "Number of humans  : ", apocalyptica.num_humans()
 # ZOMBIE test
-mini_clip = Apocalypse(4, 6)
+obstacles = [(2, 7), (3, 7), (5, 6)]
+mini_clip = Apocalypse(8, 10, obstacles)
 print mini_clip
-mini_clip.add_zombie(1, 5)
+mini_clip.add_zombie(6, 6)
 mini_clip.add_zombie(3, 2)
 print "Num zombies : ", mini_clip.num_zombies()
 for zombie in mini_clip.zombies():
@@ -203,6 +228,10 @@ print zombie_dist_fld[0]
 print zombie_dist_fld[1]
 print zombie_dist_fld[2]
 print zombie_dist_fld[3]
+print zombie_dist_fld[4]
+print zombie_dist_fld[5]
+print zombie_dist_fld[6]
+print zombie_dist_fld[7]
 # HUMAN test
 mini_clip.add_human(1, 0)
 mini_clip.add_human(2, 3)
@@ -214,5 +243,40 @@ print human_dist_fld[0]
 print human_dist_fld[1]
 print human_dist_fld[2]
 print human_dist_fld[3]
-
+print human_dist_fld[4]
+print human_dist_fld[5]
+print human_dist_fld[6]
+print human_dist_fld[7]
+# move the zombies and see where they appear
+mini_clip.move_zombies(human_dist_fld)
+# see where they are now
+print "Num zombies : ", mini_clip.num_zombies()
+for zombie in mini_clip.zombies():
+    print "Z : ", zombie
+# create a new distance field
+zombie_dist_fld = mini_clip.compute_distance_field(ZOMBIE)
+print zombie_dist_fld[0]
+print zombie_dist_fld[1]
+print zombie_dist_fld[2]
+print zombie_dist_fld[3]
+print zombie_dist_fld[4]
+print zombie_dist_fld[5]
+print zombie_dist_fld[6]
+print zombie_dist_fld[7]
+# move the zombies again and see where they appear
+mini_clip.move_zombies(human_dist_fld)
+# see where they are now
+print "Num zombies : ", mini_clip.num_zombies()
+for zombie in mini_clip.zombies():
+    print "Z : ", zombie
+# create a new distance field
+zombie_dist_fld = mini_clip.compute_distance_field(ZOMBIE)
+print zombie_dist_fld[0]
+print zombie_dist_fld[1]
+print zombie_dist_fld[2]
+print zombie_dist_fld[3]
+print zombie_dist_fld[4]
+print zombie_dist_fld[5]
+print zombie_dist_fld[6]
+print zombie_dist_fld[7]
 
