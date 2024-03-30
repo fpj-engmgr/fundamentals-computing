@@ -24,10 +24,13 @@ def remove_duplicates(list1):
     #
     if len(list1) < 2:
         return list1
-    elif list1[0] <> list1[1]:
-        new_list.append(list1[0])
-    #
-    new_list += remove_duplicates(list1[1:])
+    else:
+        for index in range(len(list1) - 1):
+            if list1[index] <> list1[index + 1]:
+                new_list.append(list1[index])
+        #
+        # append the last element?
+        new_list.append(list1[-1])
     #
     return new_list
 
@@ -232,7 +235,7 @@ def run():
 #res4 = remove_duplicates(tlist4)
 #print res4, " from ", tlist4
 ##
-alist0 = []
+#alist0 = []
 #alist1 = ['a']
 #alist2 = ['a', 'a']
 #alist3 = ['a', 'b', 'b', 'v']
