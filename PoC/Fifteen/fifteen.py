@@ -206,7 +206,7 @@ class Puzzle:
                         # move zero tile to left of target tile
                         move_string += ((move_steps + 1) - move_idx) * "l"
                     elif move_idx > 1:
-                        # we're let of the tile, so get to the right and move left
+                        # we're left of the tile, so get to the right and move left
                         if target_cur_row == 0:
                             move_string += "drrul"
                         else:
@@ -214,35 +214,47 @@ class Puzzle:
                 # moves now have zero to the left of target, so...
                 if target_cur_row == 0:
                     move_string += "dru"
+                    # note that we moved the target down a row
+                    target_cur_row += 1
                 else:
-                    move_string += "urd"
+                    move_string += "ur"
                 # zero is now above the target
             elif target_cur_col > target_col:
                 # target is to our right
                 move_steps = target_cur_col - target_col
                 # cycle through the moves
+#                print "move_steps : ", move_steps, " move_string : ", move_string
                 for move_idx in range(1, move_steps + 1):
                     # if this is a repeated move, position the zero to the right of the target
                     if move_idx == 1:
                         # move zero tile to left of target tile
                         move_string += ((move_steps + 1) - move_idx) * "r"
                     elif move_idx > 1:
-                        # we're let of the tile, so get to the right and move left
+                        # we're right of the tile, so get to the left and move right
                         if target_cur_row == 0:
                             move_string += "dllur"
                         else:
                             move_string += "ulldr"
+#                    print move_idx, " : ", move_string
                 # moves now have zero to the right of target, so...
                 if target_cur_row == 0:
                     move_string += "dlu"
+                    # note that we moved the target down a row
+                    target_cur_row += 1
                 else:
-                    move_string += "uld"
+                    move_string += "ul"
+            elif target_cur_col == target_col:
+                # we have moved the target down a row with the u's
+                target_cur_row += 1
             # zero is now above the target tile, which is down one row
-            move_steps = target_row - target_cur_row
+#            print "we should be above the target tile"
+            move_steps = 1 + (target_row - target_cur_row)
+#            print self, move_string, move_steps
             for move_idx in range(1, move_steps):
                 move_string += "lddru"
             # target should now be in place, so move zero to correct position
             move_string += "ld"
+#            print "solve_interior_tile : move_string : ", move_string
             # update the puzzle
             self.update_puzzle(move_string)
             # verify that lower_row_invariant holds for new position
@@ -257,8 +269,84 @@ class Puzzle:
         Solve tile in column zero on specified row (> 1)
         Updates puzzle and returns a move string
         """
-        # replace with your code
-        return ""
+
+        # ensure that lower_row_invariant is True
+        assert self.lower_row_invariant(target_row, 0) == True, "solve_col0_tile: lower_row_invariant != True!"
+        # initialize move string and save the width
+        move_string = ""
+        puzzle_width = self.get_width()
+        # find current position of target tile
+        (target_cur_row, target_cur_col) = self.current_position(target_row, 0)
+        #
+        print "solve_col0_tile - target is at (", target_cur_row, ", ", target_cur_col, ")" 
+        # if target is in column 0, right above us life's nice!
+        if (target_cur_col == 0) and (target_cur_row == (target_row - 1)):
+            # move tile zero up and to the end of the row
+            move_string = "u" + (puzzle_width - 1) * "r"
+        else:
+            # move tile zero up
+            move_string = "u"
+            # get the target into column 1 - first check the rows we need to move
+            num_row_moves = (target_row - (target_cur_row + 1))
+            #
+            if target_cur_col == 1:
+                # we want to get target to (target_row - 1, 1)
+                # if we're one the same row already...don't do a thing
+                if num_row_moves > 0:
+                    move_string += "r" + num_row_moves * "u"
+                    target_cur_row += 1
+                print "solve_col0_tile - target in col 1 : ", move_string
+                # tile zero is now above the target, which is one step closer
+            elif target_cur_col == 0:
+                # move tile zero to right and go up to target_cur_row
+                move_string += "r" + num_row_moves * "u"
+                # we're to the right of the target, so go left and around
+                move_string += "ldru"
+                target_cur_row += 1
+                # tile zero is now above the target, which is one step closer
+            else:
+                # move tile zero to col 1 and to the target_cur_row and target_cur_col
+                move_string += "r" + num_row_moves * "u"
+                num_col_moves = target_cur_col - 1
+                move_string += num_col_moves * "r"
+                # loop through additional moves to get target to col 1, if needed
+                for move_idx in range(1, num_col_moves):
+                    if target_cur_row == 0:
+                        move_string += "dllur"
+                    else:
+                        move_string += "ulldr"
+                # we're to the right of the target, which is in col 1
+                if target_cur_row == 0:
+                    move_string += "dlu"
+                    target_cur_row += 1
+                else:
+                    move_string += "ul"
+                # tile zero is now above the target, which is one step closer
+                
+            # common moves start here
+            # move target down toward (target_row - 1, 1)
+            num_row_moves = (target_row - 1) - target_cur_row
+            # iterate the number of rows to come down
+            if num_row_moves > 0:
+                move_string += "lddru" * num_row_moves
+                # move zero from above target to left of target
+                move_string += "ld"
+            
+            # and now target is above target's neighbor, so...
+            move_string += "ruldrdlurdluurddlur"
+            # tile zero is now at (target_row - 1, 1), so go to end of row
+            move_string += (puzzle_width - 2) * "r"
+            
+        # make it so
+        print "solve_col0_tile - move_string at end : ", move_string
+        # update the puzzle
+        self.update_puzzle(move_string)
+        # verify that lower_row_invariant holds for new position
+        (tile_zero_row, tile_zero_col) = self.current_position(0, 0)
+        assert self.lower_row_invariant(tile_zero_row, tile_zero_col) == True, "solve_col0_tile: lower_row_invariant != True"
+        
+        return move_string
+
 
     #############################################################
     # Phase two methods
@@ -337,15 +425,16 @@ def test_puzzle():
     # check a couple of basic items
     print "Basics testing"
     print puzzle_0
-#    print puzzle_0.get_number(3, 1)
-#    print puzzle_0.lower_row_invariant(3, 1)
+    print "Tile zero is at ", puzzle_0.current_position(0, 0)
+    print
     assert puzzle_0.get_height() == height_0, "get_height: Height assertion failure!"
     assert puzzle_0.get_width() == width_0, "get_width: Width assertion failure!"
     assert puzzle_0.get_number(3, 1) == 0, "get_number: Tile zero not at (3, 1)"
     assert puzzle_0.current_position(0, 0) == (3, 1), "current_position: Tile zero not at (3, 1)"
-    #
+    # 
     assert puzzle_0.lower_row_invariant(3, 1), "lower_row_invariant failure of (3, 1)"
     assert not puzzle_0.lower_row_invariant(1, 2), "lower_row_invariant failure of (1, 2)"
+    # non-last row
     grid_0 = [[4, 2, 3, 5],
               [1, 0, 6, 7],
               [8, 9, 10, 11],
@@ -354,17 +443,30 @@ def test_puzzle():
     width_0 = 4
     puzzle_0 = Puzzle(height_0, width_0, grid_0)
     # check a couple of basic items
-    print "Basics testing"
+    print "Basics testing - lower_row_invariant for not last row"
     print puzzle_0
-#    print puzzle_0.get_number(3, 1)
-#    print puzzle_0.lower_row_invariant(3, 1)
-    assert puzzle_0.get_height() == height_0, "get_height: Height assertion failure!"
-    assert puzzle_0.get_width() == width_0, "get_width: Width assertion failure!"
-    assert puzzle_0.get_number(1, 1) == 0, "get_number: Tile zero not at (1, 1)"
-    assert puzzle_0.current_position(0, 0) == (1, 1), "current_position: Tile zero not at (1, 1)"
+    print "Tile zero is at ", puzzle_0.current_position(0, 0)
+    print
     #
     assert puzzle_0.lower_row_invariant(1, 1), "lower_row_invariant failure of (1, 1)"
     assert not puzzle_0.lower_row_invariant(1, 2), "lower_row_invariant failure of (1, 2)"
+    # very last entry
+    grid_0 = [[4, 2, 3, 5],
+              [1, 15, 6, 7],
+              [8, 9, 10, 11],
+              [12, 13, 14, 0]]
+    height_0 = 4
+    width_0 = 4
+    puzzle_0 = Puzzle(height_0, width_0, grid_0)
+    # check a couple of basic items
+    print "Basics testing - lower_row_invariant for very last item"
+    print puzzle_0
+    print "Tile zero is at ", puzzle_0.current_position(0, 0)
+    print
+    #
+    assert puzzle_0.lower_row_invariant(3, 3), "lower_row_invariant failure of (1, 1)"
+    assert not puzzle_0.lower_row_invariant(1, 2), "lower_row_invariant failure of (1, 2)"
+    #
     #
     # test solve_interior_tile - same row
     grid_1 = [[4, 2, 3, 7],
@@ -410,5 +512,133 @@ def test_puzzle():
     move_string_3 = puzzle_3.solve_interior_tile(3, 1)
     print "move_string_3 : ", move_string_3
     print puzzle_3
+    #
+    grid_4 = [[4, 3, 1, 13],
+              [5, 10, 2, 7],
+              [8, 12, 6, 11],
+              [9, 0, 14, 15]]
+    height_4 = 4
+    width_4 = 4
+    puzzle_4 = Puzzle(height_4, width_4, grid_4)
+    #
+    print "solve_interior_tile - different row test - target to the right"
+    print puzzle_4
+    move_string_4 = puzzle_4.solve_interior_tile(3, 1)
+    print "move_string_4 : ", move_string_4
+    print puzzle_4
+    #
+    grid_5 = [[13, 3, 1, 4],
+              [5, 10, 2, 7],
+              [8, 12, 6, 11],
+              [9, 0, 14, 15]]
+    height_5 = 4
+    width_5 = 4
+    puzzle_5 = Puzzle(height_5, width_5, grid_5)
+    #
+    print "solve_interior_tile - different row test - target to the left"
+    print puzzle_5
+    move_string_5 = puzzle_5.solve_interior_tile(3, 1)
+    print "move_string_5 : ", move_string_5
+    print puzzle_5
+    #
+    grid_6 = [[6, 3, 1, 4],
+              [5, 10, 2, 7],
+              [8, 12, 13, 11],
+              [9, 0, 14, 15]]
+    height_6 = 4
+    width_6 = 4
+    puzzle_6 = Puzzle(height_6, width_6, grid_6)
+    #
+    print "solve_interior_tile - target one row up to right"
+    print puzzle_6
+    move_string_6 = puzzle_6.solve_interior_tile(3, 1)
+    print "move_string_6 : ", move_string_6
+    print puzzle_6
+    #
+    grid_7 = [[6, 3, 1, 4],
+              [5, 10, 2, 7],
+              [13, 12, 8, 11],
+              [9, 0, 14, 15]]
+    height_7 = 4
+    width_7 = 4
+    puzzle_7 = Puzzle(height_7, width_7, grid_7)
+    #
+    print "solve_interior_tile - target one row up to left"
+    print puzzle_7
+    move_string_7 = puzzle_7.solve_interior_tile(3, 1)
+    print "move_string_7 : ", move_string_7
+    print puzzle_7
+    #
+    # start solve_col0_tile tests
+    #
+    grid_8 = [[6, 3, 1, 4],
+              [5, 10, 2, 7],
+              [12, 9, 8, 11],
+              [0, 13, 14, 15]]
+    height_8 = 4
+    width_8 = 4
+    puzzle_8 = Puzzle(height_8, width_8, grid_8)
+    #
+    print "solve_col0_tile - target right above us"
+    print puzzle_8
+    move_string_8 = puzzle_8.solve_col0_tile(3)
+    print "move_string_8 : ", move_string_8
+    print puzzle_8
+    #
+    grid_8 = [[6, 3, 1, 4],
+              [5, 10, 2, 7],
+              [9, 12, 8, 11],
+              [0, 13, 14, 15]]
+    height_8 = 4
+    width_8 = 4
+    puzzle_8 = Puzzle(height_8, width_8, grid_8)
+    #
+    print "solve_col0_tile - target is at (2, 1)"
+    print puzzle_8
+    move_string_8 = puzzle_8.solve_col0_tile(3)
+    print "move_string_8 : ", move_string_8
+    print puzzle_8
+    #
+    grid_8 = [[6, 3, 1, 4],
+              [5, 10, 12, 7],
+              [9, 2, 8, 11],
+              [0, 13, 14, 15]]
+    height_8 = 4
+    width_8 = 4
+    puzzle_8 = Puzzle(height_8, width_8, grid_8)
+    #
+    print "solve_col0_tile - target is at (1, 2)"
+    print puzzle_8
+    move_string_8 = puzzle_8.solve_col0_tile(3)
+    print "move_string_8 : ", move_string_8
+    print puzzle_8
+    #
+    grid_8 = [[6, 3, 1, 12],
+              [5, 10, 4, 7],
+              [9, 2, 8, 11],
+              [0, 13, 14, 15]]
+    height_8 = 4
+    width_8 = 4
+    puzzle_8 = Puzzle(height_8, width_8, grid_8)
+    #
+    print "solve_col0_tile - target is at (0, 3)"
+    print puzzle_8
+    move_string_8 = puzzle_8.solve_col0_tile(3)
+    print "move_string_8 : ", move_string_8
+    print puzzle_8
+    #
+    grid_8 = [[12, 3, 1, 6],
+              [5, 10, 4, 7],
+              [9, 2, 8, 11],
+              [0, 13, 14, 15]]
+    height_8 = 4
+    width_8 = 4
+    puzzle_8 = Puzzle(height_8, width_8, grid_8)
+    #
+    print "solve_col0_tile - target is at (0, 0)"
+    print puzzle_8
+    move_string_8 = puzzle_8.solve_col0_tile(3)
+    print "move_string_8 : ", move_string_8
+    print puzzle_8
 #
 test_puzzle()
