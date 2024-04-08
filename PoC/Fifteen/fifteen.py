@@ -131,6 +131,8 @@ class Puzzle:
         at the given position in the bottom rows of the puzzle (target_row > 1)
         Returns a boolean
         """
+        #
+        assert target_row > 1, "lower_row_invariant: target_row too low!"
         # get the width and height
         puzzle_width = self.get_width()
         puzzle_height = self.get_height()
@@ -157,7 +159,7 @@ class Puzzle:
         Updates puzzle and returns a move string
         """
         # verify that we're not trying to solve for column 0
-        assert target_col != 0, "solve_interior_tile called for col 0; use solve_col0_tile instead!"
+        assert target_col != 0, "use solve_col0_tile for column 0!"
         # ensure that lower_row_invariant is True
         assert self.lower_row_invariant(target_row, target_col) == True, "solve_interior_tile: lower_row_invariant != True!"
         # initialize move string
@@ -165,9 +167,7 @@ class Puzzle:
         # find current position of target tile
         (target_cur_row, target_cur_col) = self.current_position(target_row, target_col)
         #
-        # examine the options:
-        # - same row:
-        # - - move left for the number of steps
+        # same row - move left for the number of steps
         if target_cur_row == target_row:
             # see how far away the target tile is
             move_steps = target_col - target_cur_col
@@ -277,8 +277,8 @@ class Puzzle:
         puzzle_width = self.get_width()
         # find current position of target tile
         (target_cur_row, target_cur_col) = self.current_position(target_row, 0)
-        #
-        print "solve_col0_tile - target is at (", target_cur_row, ", ", target_cur_col, ")" 
+#       #
+#        print "solve_col0_tile - target is at (", target_cur_row, ", ", target_cur_col, ")" 
         # if target is in column 0, right above us life's nice!
         if (target_cur_col == 0) and (target_cur_row == (target_row - 1)):
             # move tile zero up and to the end of the row
@@ -295,7 +295,7 @@ class Puzzle:
                 if num_row_moves > 0:
                     move_string += "r" + num_row_moves * "u"
                     target_cur_row += 1
-                print "solve_col0_tile - target in col 1 : ", move_string
+#                print "solve_col0_tile - target in col 1 : ", move_string
                 # tile zero is now above the target, which is one step closer
             elif target_cur_col == 0:
                 # move tile zero to right and go up to target_cur_row
@@ -338,7 +338,7 @@ class Puzzle:
             move_string += (puzzle_width - 2) * "r"
             
         # make it so
-        print "solve_col0_tile - move_string at end : ", move_string
+#        print "solve_col0_tile - move_string at end : ", move_string
         # update the puzzle
         self.update_puzzle(move_string)
         # verify that lower_row_invariant holds for new position
@@ -357,8 +357,33 @@ class Puzzle:
         at the given column (col > 1)
         Returns a boolean
         """
-        # replace with your code
-        return False
+        assert target_col > 1, "row0_invariant: target column not > 1"
+        # get the width and height
+        puzzle_width = self.get_width()
+        puzzle_height = self.get_height()
+        # set the row we're starting with
+        target_row = 0
+        # is tile zero located at (0, target_col)? if not return False
+        if self.get_number(0, target_col) != 0:
+            return False
+        # are tiles to the right of tile zero in the correct position?
+        for tile_col in range(target_col + 1, puzzle_width):
+            expected_val = tile_col + target_row * puzzle_width
+            if self.get_number(target_row, tile_col) != expected_val:
+                return False
+        # are tiles at (1, target_col) and to its right correct?
+        for tile_col in range(target_col, puzzle_width):
+            expected_val = tile_col + (target_row + 1) * puzzle_width
+            if self.get_number(target_row + 1, tile_col) != expected_val:
+                return False
+        # if there are more rows below our target_row, check them also
+        for target_idx in range(target_row + 1, puzzle_height):
+            for tile_col in range(target_col, puzzle_width):
+                expected_val = tile_col + (target_idx) * puzzle_width
+                if self.get_number(target_idx, tile_col) != expected_val:
+                    return False
+        # we passed all the tests, so the invariant is True
+        return True
 
     def row1_invariant(self, target_col):
         """
@@ -366,24 +391,108 @@ class Puzzle:
         at the given column (col > 1)
         Returns a boolean
         """
-        # replace with your code
-        return False
+        assert target_col > 1, "row1_invariant: target column not > 1"
+        # get the width and height
+        puzzle_width = self.get_width()
+        puzzle_height = self.get_height()
+        # set the row we're starting with
+        target_row = 1
+        # is tile zero located at (1, target_col)? if not return False
+        if self.get_number(1, target_col) != 0:
+            return False
+        # are tiles to the right of tile zero in the correct position?
+        for tile_col in range(target_col + 1, puzzle_width):
+            expected_val = tile_col + target_row * puzzle_width
+            if self.get_number(target_row, tile_col) != expected_val:
+                return False
+        # if there are more rows below our target_row, check them also
+        for target_idx in range(target_row + 1, puzzle_height):
+            for tile_col in range(puzzle_width):
+                expected_val = tile_col + (target_idx) * puzzle_width
+                if self.get_number(target_idx, tile_col) != expected_val:
+                    return False
+        # we passed all the tests, so the invariant is True
+        return True
 
     def solve_row0_tile(self, target_col):
         """
         Solve the tile in row zero at the specified column
         Updates puzzle and returns a move string
         """
-        # replace with your code
-        return ""
+        # 
+        move_string = ""
+        # where is the target?
+        (target_cur_row, target_cur_col) = self.current_position(0, target_col)
+        # if the target is to the left of zero...we're home free!
+        if (target_cur_row == 0) and (target_cur_col == (target_col - 1)):
+            move_string = "l"
+        else:
+            # solve for a 2x3 puzzle
+            my_clone = self.clone()
+            # we have to move the zero tile first left and down
+            move_string = "ldl"
+            # update the clone
+            my_clone.update_puzzle("ldl")
+            # check where the target is
+            (clone_cur_row, clone_cur_col) = my_clone.current_position(1, target_col)
+            # is it in the right spot? (2, target_col - 1)
+            if (clone_cur_row == 2) and (clone_cur_col == (target_col - 1)):
+                # once we have the target and zero in the right place, we do...
+                move_string += "urdlurrdluldrruld"
+            else:
+                for move_count in range(2):
+                    move_string += "urdl"
+                    # update the clone
+                    my_clone.update_puzzle("urdl")
+                    (clone_cur_row, clone_cur_col) = my_clone.current_position(1, target_col)
+                    # are we in the right spot now?
+                    if (clone_cur_row == 2) and (clone_cur_col == (target_col - 1)):
+                        # once we have the target and zero in the right place, we do...
+                        move_string += "urdlurrdluldrruld"
+                        break
+        # update the puzzle and we're good
+        self.update_puzzle(move_string)
+        #
+        return move_string
 
     def solve_row1_tile(self, target_col):
         """
         Solve the tile in row one at the specified column
         Updates puzzle and returns a move string
         """
-        # replace with your code
-        return ""
+        # 
+        move_string = ""
+        # where is the target?
+        (target_cur_row, target_cur_col) = self.current_position(1, target_col)
+        # address 2 very simple cases...
+        if (target_cur_row == 1) and (target_cur_col == (target_col - 1)):
+            # target is to the left
+            move_string = "lur"
+        elif (target_cur_col == target_col) and (target_cur_row == 0):
+            # target is above us
+            move_string = "u"
+        else:
+            # create a clone for testing
+            my_clone = self.clone()
+            # save the expected value
+            expected_val = self.get_width() + target_col
+            # put zero in the end position (0, target_col)
+            move_string = "u"
+            #
+            my_clone.update_puzzle("u")
+            # cycle through the 2x3 grid until we have the target in place
+            for dummy_idx in range(5):
+                move_string += "lldrru"
+                my_clone.update_puzzle("lldrru")
+                #
+                if my_clone.get_number(1, target_col) == expected_val:
+                    break
+        # that's all there is to it
+
+        # update the puzzle and we're good
+        self.update_puzzle(move_string)
+        #
+        return move_string
 
     ###########################################################
     # Phase 3 methods
@@ -433,11 +542,11 @@ def test_puzzle():
     assert puzzle_0.current_position(0, 0) == (3, 1), "current_position: Tile zero not at (3, 1)"
     # 
     assert puzzle_0.lower_row_invariant(3, 1), "lower_row_invariant failure of (3, 1)"
-    assert not puzzle_0.lower_row_invariant(1, 2), "lower_row_invariant failure of (1, 2)"
+    assert not puzzle_0.lower_row_invariant(2, 2), "lower_row_invariant failure of (2, 2)"
     # non-last row
     grid_0 = [[4, 2, 3, 5],
-              [1, 0, 6, 7],
-              [8, 9, 10, 11],
+              [1, 9, 6, 7],
+              [8, 0, 10, 11],
               [12, 13, 14, 15]]
     height_0 = 4
     width_0 = 4
@@ -448,8 +557,8 @@ def test_puzzle():
     print "Tile zero is at ", puzzle_0.current_position(0, 0)
     print
     #
-    assert puzzle_0.lower_row_invariant(1, 1), "lower_row_invariant failure of (1, 1)"
-    assert not puzzle_0.lower_row_invariant(1, 2), "lower_row_invariant failure of (1, 2)"
+    assert puzzle_0.lower_row_invariant(2, 1), "lower_row_invariant failure of (2, 1)"
+    assert not puzzle_0.lower_row_invariant(2, 2), "lower_row_invariant failure of (2, 2)"
     # very last entry
     grid_0 = [[4, 2, 3, 5],
               [1, 15, 6, 7],
@@ -464,8 +573,25 @@ def test_puzzle():
     print "Tile zero is at ", puzzle_0.current_position(0, 0)
     print
     #
-    assert puzzle_0.lower_row_invariant(3, 3), "lower_row_invariant failure of (1, 1)"
-    assert not puzzle_0.lower_row_invariant(1, 2), "lower_row_invariant failure of (1, 2)"
+    assert puzzle_0.lower_row_invariant(3, 3), "lower_row_invariant failure of (3, 3)"
+    assert not puzzle_0.lower_row_invariant(2, 2), "lower_row_invariant failure of (2, 2)"
+    #
+    # end of row (height - 1)
+    grid_0 = [[4, 2, 3, 5],
+              [1, 11, 6, 7],
+              [8, 9, 10, 0],
+              [12, 13, 14, 15]]
+    height_0 = 4
+    width_0 = 4
+    puzzle_0 = Puzzle(height_0, width_0, grid_0)
+    # check a couple of basic items
+    print "Basics testing - lower_row_invariant for very last item"
+    print puzzle_0
+    print "Tile zero is at ", puzzle_0.current_position(2, 3)
+    print
+    #
+    assert puzzle_0.lower_row_invariant(2, 3), "lower_row_invariant failure of (2, 3)"
+    assert not puzzle_0.lower_row_invariant(2, 2), "lower_row_invariant failure of (2, 2)"
     #
     #
     # test solve_interior_tile - same row
@@ -640,5 +766,144 @@ def test_puzzle():
     move_string_8 = puzzle_8.solve_col0_tile(3)
     print "move_string_8 : ", move_string_8
     print puzzle_8
+    #
+    grid_8 = [[6, 3, 1, 4],
+              [5, 10, 2, 7],
+              [12, 9, 8, 11],
+              [0, 13, 14, 15]]
+    height_8 = 4
+    width_8 = 4
+    puzzle_8 = Puzzle(height_8, width_8, grid_8)
+    #
+    print "solve_col0_tile - target is at (2, 0)"
+    print puzzle_8
+    move_string_8 = puzzle_8.solve_col0_tile(3)
+    print "move_string_8 : ", move_string_8
+    print puzzle_8
+    #
+    grid_9 = [[4, 6, 1, 3],
+              [5, 2, 0, 7],
+              [8, 9, 10, 11],
+              [12, 13, 14, 15]]
+    height_9 = 4
+    width_9 = 4
+    puzzle_9 = Puzzle(height_9, width_9, grid_9)
+    #
+    print "row1_invariant testing"
+    print puzzle_9
+    #
+    assert puzzle_9.row1_invariant(2) == True, "row1 invariant failed for column 2"
+    #
+    grid_9 = [[4, 6, 1, 7],
+              [5, 2, 0, 3],
+              [8, 9, 10, 11],
+              [12, 13, 14, 15]]
+    height_9 = 4
+    width_9 = 4
+    puzzle_9 = Puzzle(height_9, width_9, grid_9)
+    #
+    print "row1_invariant testing"
+    print puzzle_9
+    #
+    assert puzzle_9.row1_invariant(2) == False, "row1 invariant failed for column 2"
+    #
+    grid_9 = [[4, 6, 1, 14],
+              [5, 2, 0, 7],
+              [8, 9, 10, 11],
+              [12, 13, 3, 15]]
+    height_9 = 4
+    width_9 = 4
+    puzzle_9 = Puzzle(height_9, width_9, grid_9)
+    #
+    print "row1_invariant testing"
+    print puzzle_9
+    #
+    assert puzzle_9.row1_invariant(2) == False, "row1 invariant failed for column 2"
+    #
+    # row0_invariant tests
+    grid_9 = [[4, 2, 0, 3],
+              [5, 1, 6, 7],
+              [8, 9, 10, 11],
+              [12, 13, 14, 15]]
+    height_9 = 4
+    width_9 = 4
+    puzzle_9 = Puzzle(height_9, width_9, grid_9)
+    #
+    print "row0_invariant testing"
+    print puzzle_9
+    #
+    assert puzzle_9.row0_invariant(2) == True, "row0 invariant failed for column 2"
+    #
+    grid_9 = [[4, 2, 3, 0],
+              [5, 1, 6, 7],
+              [8, 9, 10, 11],
+              [12, 13, 14, 15]]
+    height_9 = 4
+    width_9 = 4
+    puzzle_9 = Puzzle(height_9, width_9, grid_9)
+    #
+    print "row0_invariant testing"
+    print puzzle_9
+    #
+    assert puzzle_9.row0_invariant(3) == True, "row0 invariant failed for column 2"
+    # test the solvers for row1 and row0
+    grid_10 = [[4, 2, 6, 3],
+              [5, 1, 0, 7],
+              [8, 9, 10, 11],
+              [12, 13, 14, 15]]
+    height_10 = 4
+    width_10 = 4
+    puzzle_10 = Puzzle(height_10, width_10, grid_10)
+    #
+    print "solve_row1_tile - solution above"
+    print puzzle_10
+    #
+    move_string_10 = puzzle_10.solve_row1_tile(2)
+    print "move_string_10 : ", move_string_10
+    print puzzle_10
+    print "now try for solve_row0_tile!"
+    move_string_10 = puzzle_10.solve_row0_tile(2)
+    print "move_string_10 : ", move_string_10
+    print puzzle_10
+    #
+    grid_10 = [[6, 2, 4, 3],
+              [5, 1, 0, 7],
+              [8, 9, 10, 11],
+              [12, 13, 14, 15]]
+    height_10 = 4
+    width_10 = 4
+    puzzle_10 = Puzzle(height_10, width_10, grid_10)
+    #
+    print "solve_row1_tile - go fish"
+    print puzzle_10
+    #
+    move_string_10 = puzzle_10.solve_row1_tile(2)
+    print "move_string_10 : ", move_string_10
+    print puzzle_10
+    #
+    print "now try for solve_row0_tile!"
+    move_string_10 = puzzle_10.solve_row0_tile(2)
+    print "move_string_10 : ", move_string_10
+    print puzzle_10
+    #
+    grid_10 = [[6, 2, 1, 3],
+              [5, 6, 0, 7],
+              [8, 9, 10, 11],
+              [12, 13, 14, 15]]
+    height_10 = 4
+    width_10 = 4
+    puzzle_10 = Puzzle(height_10, width_10, grid_10)
+    #
+    print "solve_row1_tile - leftie"
+    print puzzle_10
+    #
+    move_string_10 = puzzle_10.solve_row1_tile(2)
+    print "move_string_10 : ", move_string_10
+    print puzzle_10
+    #
+    print "now try for solve_row0_tile!"
+    move_string_10 = puzzle_10.solve_row0_tile(2)
+    print "move_string_10 : ", move_string_10
+    print puzzle_10
 #
 test_puzzle()
