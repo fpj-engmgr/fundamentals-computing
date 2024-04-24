@@ -3,6 +3,9 @@ Provided code for Application portion of Module 1
 
 Imports physics citation graph 
 """
+import matplotlib.pyplot as plt
+import numpy as np
+
 """
 # Omit this section for right now
 
@@ -105,16 +108,39 @@ def normal_in_degree_distribution(digraph):
     #
     return normal_in_degree_dist_dict
 
-
+def plot_digraph_loglog(digraph):
+    """
+    Function to plot a normalized digraph in loglog mode
+    """
+    # Let's organize the digraph into x and y data
+    points_list = sorted(digraph.items())
+    # remove 0 in_degrees from the points_list to avoid log(0)
+    del points_list[0]
+    #
+    x, y = zip(*points_list)
+    #
+    # Now let's set up the plotting area
+    fig, ax = plt.subplots(figsize=(16, 10))
+    fig.suptitle('Log/Log plot of in_degree distribution for the citation graph')
+    ax.scatter(x, y)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('Number of Citations')
+    ax.set_ylabel('Fraction of Papers')
+    plt.show()
     
     
     
 citation_graph = load_graph(CITATION_URL)
-print(len(citation_graph))
+#print(len(citation_graph))
 in_degree_dist = in_degree_distribution(citation_graph)
 #print(in_degree_dist)
 normal_in_degree = normal_in_degree_distribution(citation_graph)
-#print(normal_in_degree)
+#sorted_digraph = sorted(normal_in_degree.items())
+#del sorted_digraph[0]
+#print(sorted_digraph)
 print(len(normal_in_degree), len(in_degree_dist))
+
+plot_digraph_loglog(normal_in_degree)
 
 
