@@ -3,6 +3,8 @@ Provided code for Application portion of Module 1
 
 Imports physics citation graph 
 """
+"""
+# Omit this section for right now
 
 # general imports
 import urllib2
@@ -11,11 +13,13 @@ import urllib2
 import codeskulptor
 codeskulptor.set_timeout(20)
 
-
+# end of codeskulptor items
+"""
 ###################################
 # Code for loading citation graph
 
-CITATION_URL = "http://storage.googleapis.com/codeskulptor-alg/alg_phys-cite.txt"
+# CITATION_URL = "http://storage.googleapis.com/codeskulptor-alg/alg_phys-cite.txt"
+CITATION_URL = "/Users/fpj/Development/python/fundamentals-computing/Algorithmic Thinking/data/alg_phys-cite.txt"
 
 def load_graph(graph_url):
     """
@@ -24,12 +28,13 @@ def load_graph(graph_url):
     
     Returns a dictionary that models a graph
     """
-    graph_file = urllib2.urlopen(graph_url)
+#    graph_file = urllib2.urlopen(graph_url)
+    graph_file = open(graph_url)
     graph_text = graph_file.read()
     graph_lines = graph_text.split('\n')
     graph_lines = graph_lines[ : -1]
     
-    print "Loaded graph with", len(graph_lines), "nodes"
+    print("Loaded graph with", len(graph_lines), "nodes")
     
     answer_graph = {}
     for line in graph_lines:
@@ -68,19 +73,48 @@ def in_degree_distribution(digraph):
     # first compute the in-degrees for each node in the digraph
     in_degree_dict = compute_in_degrees(digraph)
     # create an empty degree distribution dict
-    deg_dist_dict = {}
+    in_degree_dist_dict = {}
     # go through each node and look at its in-degrees
     for node in in_degree_dict.keys():
         in_degrees = in_degree_dict[node]
         # if this in-degree count exists increment, else set to 1
-        if in_degrees in deg_dist_dict:
-            deg_dist_dict[in_degrees] += 1
+        if in_degrees in in_degree_dist_dict:
+            in_degree_dist_dict[in_degrees] += 1
         else:
-            deg_dist_dict[in_degrees] = 1
+            in_degree_dist_dict[in_degrees] = 1
     # return the distribution
-    return deg_dist_dict
+    return in_degree_dist_dict
 
+def normal_in_degree_distribution(digraph):
+    """
+    Function to return a normalized in-degree distribution for a given
+    directed graph
+    
+    Returns a dict with normalized in-degree values
+    """
+    # get the number of nodes in the digraph
+    num_nodes = float(len(digraph))
+    # get the in-degree distribution (not normalized)
+    in_degree_distro = in_degree_distribution(digraph)
+    #
+    normal_in_degree_dist_dict = {}
+    # step through the in-degree distribution and normalize
+    for node_key in in_degree_distro.keys():
+        # get the value, normalize and store
+        normal_in_degree_dist_dict[node_key] = float(in_degree_distro[node_key]) / num_nodes
+    #
+    return normal_in_degree_dist_dict
+
+
+    
+    
+    
 citation_graph = load_graph(CITATION_URL)
-print len(citation_graph)
+print(len(citation_graph))
 in_degree_dist = in_degree_distribution(citation_graph)
-print in_degree_dist
+#print(in_degree_dist)
+normal_in_degree = normal_in_degree_distribution(citation_graph)
+#print(normal_in_degree)
+print(len(normal_in_degree), len(in_degree_dist))
+
+
