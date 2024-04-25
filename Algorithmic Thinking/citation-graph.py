@@ -88,6 +88,21 @@ def in_degree_distribution(digraph):
     # return the distribution
     return in_degree_dist_dict
 
+def total_in_degrees(digraph):
+    """
+    Helper function to calculate the total number of in-degrees
+
+    Args:
+        digraph (dict): directed graph to be traversed
+    """
+    #
+    totindeg = 0
+    #
+    for node_key in digraph.keys():
+        totindeg += node_key * digraph[node_key]
+    #
+    return totindeg
+   
 def normal_in_degree_distribution(digraph):
     """
     Function to return a normalized in-degree distribution for a given
@@ -134,13 +149,20 @@ def plot_digraph_loglog(digraph):
 citation_graph = load_graph(CITATION_URL)
 #print(len(citation_graph))
 in_degree_dist = in_degree_distribution(citation_graph)
+print(in_degree_dist)
+
+totlindegs = total_in_degrees(in_degree_dist)
+print('Length of citation graph', len(citation_graph))
+print('Total in-degrees : ', totlindegs)
+print('Average in-degrees : ', totlindegs / len(citation_graph))
+
 #print(in_degree_dist)
 normal_in_degree = normal_in_degree_distribution(citation_graph)
-#sorted_digraph = sorted(normal_in_degree.items())
+sorted_digraph = sorted(normal_in_degree.items())
 #del sorted_digraph[0]
 #print(sorted_digraph)
 print(len(normal_in_degree), len(in_degree_dist))
 
-plot_digraph_loglog(normal_in_degree)
+#plot_digraph_loglog(normal_in_degree)
 
 
