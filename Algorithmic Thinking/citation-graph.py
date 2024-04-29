@@ -59,11 +59,11 @@ def compute_in_degrees(digraph):
     in_degree_dict = {}
     # go through the nodes in digraph and set in-degree to 0
     for node in digraph.keys():
-        in_degree_dict[node] = 0
+        in_degree_dict[node] = len(digraph[node])
     # now got through the edges in digraph and count them
-    for edges in digraph.values():
-        for node in edges:
-            in_degree_dict[node] += 1
+    #for edges in digraph.values():
+    #    for node in edges:
+    #        in_degree_dict[node] += 1
     #
     return in_degree_dict
     
@@ -163,6 +163,6 @@ sorted_digraph = sorted(normal_in_degree.items())
 #print(sorted_digraph)
 print(len(normal_in_degree), len(in_degree_dist))
 
-#plot_digraph_loglog(normal_in_degree)
+plot_digraph_loglog(normal_in_degree)
 
 

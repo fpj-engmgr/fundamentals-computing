@@ -25,24 +25,34 @@ def make_complete_graph(num_nodes):
         digraph[node_idx] = set(all_nodes_list)
     #
     return digraph
-#
-def compute_in_degrees(digraph):
+
+def find_less_than_dict(prob_list, prob_value):
     """
-    Function to calculate the in-degrees for each node in a digraph
-    
-    Returns a dict of nodes and their in-degrees
+    Helper function that returns the node number has a probability just above
+    the given prob_value
+
+    Args:
+        prob_list (list): Sorted list of (probability, node_idx)
+        prob_value (float): Probability that it should be just above
     """
-    # start with an empty in-degree dictionary
-    in_degree_dict = {}
-    # go through the nodes in digraph and set in-degree to 0
-    for node in digraph.keys():
-        in_degree_dict[node] = 0
-    # now got through the edges in digraph and count them
-    for edges in digraph.values():
-        for node in edges:
-            in_degree_dict[node] += 1
-    #
-    return in_degree_dict
+    if len(prob_list) <= 1:
+        prob_match = prob_list[0][1]
+    else:
+        half_way = len(prob_list) // 2
+        if prob_list[half_way][0] >= prob_value:
+            if prob_list[half_way - 1][0] < prob_value:
+                prob_match = prob_list[half_way]
+            else:
+                if half_way == 1:
+                    prob_match = prob_list[half_way - 1]
+                else:
+                    prob_match = find_less_than_dict(prob_list[:half_way], prob_value)
+        else:
+            if half_way == 1:
+                prob_match = prob_list[half_way + 1]
+            else:
+                prob_match = find_less_than_dict(prob_list[half_way:], prob_value)
+    return prob_match
     
 def total_in_degrees(digraph):
     """
@@ -58,7 +68,21 @@ def total_in_degrees(digraph):
         totindeg += len(digraph[node_key])
     #
     return totindeg
-        
+
+def compute_in_degrees(digraph):
+    """
+    Function to calculate the in-degrees for each node in a digraph
+    
+    Returns a dict of nodes and their in-degrees
+    """
+    # start with an empty in-degree dictionary
+    in_degree_dict = {}
+    # go through the nodes in digraph and set in-degree to 0
+    for node in digraph.keys():
+        in_degree_dict[node] = len(digraph[node])
+    #
+    return in_degree_dict
+
 def in_degree_distribution(digraph):
     """
     Function to calculate the number of nodes with a specific in-degree
@@ -80,6 +104,47 @@ def in_degree_distribution(digraph):
     # return the distribution
     return deg_dist_dict
 
+def normal_in_degree_distribution(digraph):
+    """
+    Function to return a normalized in-degree distribution for a given
+    directed graph
+    
+    Returns a dict with normalized in-degree values
+    """
+    # get the number of nodes in the digraph
+    num_nodes = float(len(digraph))
+    # get the in-degree distribution (not normalized)
+    in_degree_distro = in_degree_distribution(digraph)
+    #
+    normal_in_degree_dist_dict = {}
+    # step through the in-degree distribution and normalize
+    for node_key in in_degree_distro.keys():
+        # get the value, normalize and store
+        normal_in_degree_dist_dict[node_key] = float(in_degree_distro[node_key]) / num_nodes
+    #
+    return normal_in_degree_dist_dict
+
+def plot_digraph_loglog(digraph):
+    """
+    Function to plot a normalized digraph in loglog mode
+    """
+    # Let's organize the digraph into x and y data
+    points_list = sorted(digraph.items())
+    # remove 0 in_degrees from the points_list to avoid log(0)
+    del points_list[0]
+    #
+    x, y = zip(*points_list)
+    #
+    # Now let's set up the plotting area
+    fig, ax = plt.subplots(figsize=(16, 10))
+    fig.suptitle('Log/Log plot of in_degree distribution for the DPA graph')
+    ax.scatter(x, y)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('in_degree')
+    ax.set_ylabel('Fraction of Nodes')
+    plt.show()
+
 def make_dpa_graph(num_nodes, start_nodes):
     """
     Function to implement the DPA algorithm, creating a synthetic directed graph
@@ -99,26 +164,48 @@ def make_dpa_graph(num_nodes, start_nodes):
     dpa_graph = make_complete_graph(start_nodes)
     # make the additional nodes
     for node_idx in range(start_nodes, num_nodes):
-        totindegs = total_in_degrees(dpa_graph)
-        print('Total in-degrees : ', totindegs)
-         #
+        ttlindegs = total_in_degrees(dpa_graph)
+        #print('Total edges : ', totindegs)
+        #
         dpa_length = len(dpa_graph)
-         #
+        #print(node_idx, dpa_length, ttlindegs, ttlindegs // dpa_length)
+        #
         new_edges = set([])
-         #
+        #
+        probability_dict = {}
+        cumulative_probability = 0.0
+        # calculate the probability of selection for all nodes in dpa_graph
+        for node in dpa_graph.keys():
+            node_indeg = len(dpa_graph[node])
+            selection_prob = (node_indeg + 1)/(ttlindegs + dpa_length)
+            cumulative_probability += selection_prob
+            probability_dict[cumulative_probability] = node
+        #
+        probability_list = sorted(probability_dict.items())
+        #
         for dummy_idx in range(start_nodes):
-            # randomly select a node in dpa_graph
-            node_key = random.randrange(0, dpa_length)
-            node_indeg = len(dpa_graph[node_key])
-            select_probability = (node_indeg + 1)/(totindegs + dpa_length)
-            print('Node : ', node_key, 'Probability of selection :', select_probability)
-            if select_probability > random.random():
-                new_edges.add(node_key)
+            #
+            prob_value = random.random()
+            prob_rslt = find_less_than_dict(probability_list, prob_value)
+            dpa_graph[(prob_rslt[1])].add(node_idx)
         # added all the edges to the set, so add it to the digraph
-        dpa_graph[node_idx] = new_edges
+        dpa_graph[node_idx] = set([])
+        # print("edges : ", new_edges)
     #
     return dpa_graph
 
-test_graph = make_dpa_graph(27770, 13)
-print(in_degree_distribution(test_graph))
+num_starter = 13
+num_nodes = 27770
+test_graph = make_dpa_graph(num_nodes, num_starter)
+
+print('Total edges : ', total_in_degrees(test_graph))
+in_deg_dict = in_degree_distribution(test_graph)
+print(sorted(in_deg_dict.items()))
+plot_graph = normal_in_degree_distribution(test_graph)
+plot_digraph_loglog(plot_graph)
+#
+for node_idx in range(num_starter):
+    print(" Node : ", node_idx, " edges : ",len(test_graph[node_idx]))
+    
+
 
