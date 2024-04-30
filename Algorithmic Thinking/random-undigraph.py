@@ -108,11 +108,12 @@ def plot_undigraph(undigraph, num_nodes):
     plt.xlim(0, num_nodes)
     plt.show()
     
-num_nodes = 10000
+num_nodes = 100
 undie = random_undirected_graphs(num_nodes, 0.5)
-undie_degree = normal_in_degree_distribution(undie)
+print(undie[0])
+#undie_degree = normal_in_degree_distribution(undie)
 
 # print(undie)
-print(sorted(undie_degree.items()))
+#print(sorted(undie_degree.items()))
 
-plot_undigraph(undie_degree, num_nodes)
+#plot_undigraph(undie_degree, num_nodes)
