@@ -3,7 +3,7 @@ Provided code for Application portion of Module 2
 """
 
 # general imports
-import urllib2
+# import urllib2
 import random
 import time
 import math
@@ -64,28 +64,33 @@ def targeted_order(ugraph):
         order.append(max_degree_node)
     return order
     
-def make_complete_graph(num_nodes):
+def random_undirected_graphs(num_nodes, probability):
     """
-    Function to return a complete undirected graph with num_nodes nodes
-    
-    Restrictions:
-    - Self-loops are not allowed
+    Founction to generate a set of random undirected graphs
+
+    Args:
+        num_nodes (int): number of nodes to create
+        probability (float): likelihood of 2 nodes being connected
+    Returns:
+        random_graphs (ugraph): undirected graph 
     """
-    # start with and empty dictionary
-    digraph = {}
-    # if num_nodes is not positive, then return empty
-    if num_nodes <= 0:
-        return digraph
-    # create a set of all nodes
-    
-    # loop through all the nodes (0 -> num_nodes -1)
+    # start with an enpty dictionary
+    random_graphs = {}
+    # populate the dictionary with the nodes and no edges yet
     for node_idx in range(num_nodes):
-        # create dict entry for this node and remove self-loop
-        all_nodes_set = set(range(num_nodes))
-        all_nodes_set.remove(node_idx)
-        digraph[node_idx] = all_nodes_set
-    #
-    return digraph
+        random_graphs[node_idx] = set([])
+    # step through each node
+    for node_outer in random_graphs.keys():
+       # loop through all nodes other than self
+        for node_inner in random_graphs.keys():
+            if node_outer == node_inner:
+                continue
+            else:
+                if random.random() < probability:
+                    random_graphs[node_outer].add(node_inner)
+                    random_graphs[node_inner].add(node_outer)
+    # all done
+    return random_graphs
 
 ##########################################################
 # Code for loading computer network graph
@@ -105,7 +110,7 @@ def load_graph(graph_url):
     graph_lines = graph_text.split('\n')
     graph_lines = graph_lines[ : -1]
     
-    print "Loaded graph with", len(graph_lines), "nodes"
+    print("Loaded graph with", len(graph_lines), "nodes")
     
     answer_graph = {}
     for line in graph_lines:
@@ -121,7 +126,10 @@ def load_graph(graph_url):
 
     
     
-    
+#
+# Testing area
+ugraf = random_undirected_graphs(10, 0.3)
+print("Undirected graph : ", ugraf)
 
 
 
