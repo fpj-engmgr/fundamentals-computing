@@ -64,13 +64,34 @@ def targeted_order(ugraph):
         order.append(max_degree_node)
     return order
     
-
+def make_complete_graph(num_nodes):
+    """
+    Function to return a complete undirected graph with num_nodes nodes
+    
+    Restrictions:
+    - Self-loops are not allowed
+    """
+    # start with and empty dictionary
+    digraph = {}
+    # if num_nodes is not positive, then return empty
+    if num_nodes <= 0:
+        return digraph
+    # create a set of all nodes
+    
+    # loop through all the nodes (0 -> num_nodes -1)
+    for node_idx in range(num_nodes):
+        # create dict entry for this node and remove self-loop
+        all_nodes_set = set(range(num_nodes))
+        all_nodes_set.remove(node_idx)
+        digraph[node_idx] = all_nodes_set
+    #
+    return digraph
 
 ##########################################################
 # Code for loading computer network graph
 
-NETWORK_URL = "http://storage.googleapis.com/codeskulptor-alg/alg_rf7.txt"
-
+# NETWORK_URL = "http://storage.googleapis.com/codeskulptor-alg/alg_rf7.txt"
+NETWORK_URL = "/Users/fpj/Development/python/fundamentals-computing/Algorithmic Thinking/data/alg_rf7.txt"
 
 def load_graph(graph_url):
     """
@@ -95,6 +116,7 @@ def load_graph(graph_url):
             answer_graph[node].add(int(neighbor))
 
     return answer_graph
+
 
 
     
