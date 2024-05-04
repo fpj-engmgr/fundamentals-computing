@@ -110,7 +110,10 @@ def plot_undigraph(undigraph, num_nodes):
     
 num_nodes = 100
 undie = random_undirected_graphs(num_nodes, 0.5)
-print(undie[0])
+#print(undie[0])
+degs = compute_in_degrees(undie)
+print("Compute_in_degrees : ", degs)
+
 #undie_degree = normal_in_degree_distribution(undie)
 
 # print(undie)
