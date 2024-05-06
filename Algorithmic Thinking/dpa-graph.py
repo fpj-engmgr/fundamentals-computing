@@ -251,8 +251,8 @@ def make_dpa_graph(num_nodes, start_nodes):
     #
     return dpa_graph
 
-num_starter = 13
-num_nodes = 27770
+num_starter = 10
+num_nodes = 20
 test_graph = make_dpa_graph(num_nodes, num_starter)
 
 print('Total edges : ', total_in_degrees(test_graph))

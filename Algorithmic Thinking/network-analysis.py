@@ -64,34 +64,56 @@ def targeted_order(ugraph):
 
         order.append(max_degree_node)
     return order
-    
-def random_undirected_graphs(num_nodes, probability):
+
+############################################
+# Helper functions
+
+def find_less_than_dict(prob_list, prob_value):
     """
-    Founction to generate a set of random undirected graphs (note:
-    undirected graphs always have symmetric adjacency matrix, i.e. if
-    there is an edge between (i,j) then there's an edge between (j,i))
+    Helper function that returns the node number has a probability just above
+    the given prob_value
 
     Args:
-        num_nodes (int): number of nodes to create
-        probability (float): likelihood of 2 nodes being connected
-    Returns:
-        random_graphs (ugraph): undirected graph 
+        prob_list (list): Sorted list of (probability, node_idx)
+        prob_value (float): Probability that it should be just above
     """
-    # start with an enpty dictionary
-    random_graphs = {}
-    # populate the dictionary with the nodes and no edges yet
-    for node_idx in range(num_nodes):
-        random_graphs[node_idx] = set([])
-    # step through each node
-    for node_outer in range(num_nodes):
-       # loop through all nodes other than self
-        for node_inner in range(node_outer + 1, num_nodes):
-            if random.random() < probability:
-                # ensure symmetry for adjacency
-                random_graphs[node_outer].add(node_inner)
-                random_graphs[node_inner].add(node_outer)
-    # all done
-    return random_graphs
+    if len(prob_list) <= 1:
+        prob_match = prob_list[0][1]
+    else:
+        half_way = len(prob_list) // 2
+        if prob_list[half_way][0] >= prob_value:
+            if prob_list[half_way - 1][0] < prob_value:
+                prob_match = prob_list[half_way]
+            else:
+                if half_way == 1:
+                    prob_match = prob_list[half_way - 1]
+                else:
+                    prob_match = find_less_than_dict(prob_list[:half_way], prob_value)
+        else:
+            if half_way == 1:
+                prob_match = prob_list[half_way + 1]
+            else:
+                prob_match = find_less_than_dict(prob_list[half_way:], prob_value)
+    return prob_match
+
+def random_order(in_graph):
+    """
+    Take all the keys in the dict in_graph and shuffle them
+
+    Args:
+        in_graph (dict): dictionary of nodes with their edges
+
+    Returns:
+        random_list: randomized list of nodes in graph
+    """
+    random_list = list()
+    #
+    for node in in_graph.keys():
+        random_list.append(node)
+    #
+    random.shuffle(random_list)
+    #
+    return random_list
 
 ##########################################################
 # Code for loading computer network graph
@@ -247,6 +269,179 @@ def total_in_degrees(ugraph):
     # as edges are symmetric, divide by 2!
     return totindeg // 2
 
+def make_complete_ugraph(num_nodes):
+    """
+    Function to return a complete undirected graph with num_nodes nodes
+    
+    Restrictions:
+    - Self-loops are not allowed
+    """
+    # start with and empty dictionary
+    ugraph = {}
+    # if num_nodes is not positive, then return empty
+    if num_nodes <= 0:
+        return ugraph
+    # create a set of all nodes
+    
+    # loop through all the nodes (0 -> num_nodes -1)
+    for node_idx in range(num_nodes):
+        # create dict entry for this node and remove self-loop
+        all_nodes_list = list(range(num_nodes))
+        all_nodes_list.remove(node_idx)
+        ugraph[node_idx] = set(all_nodes_list)
+    #
+    return ugraph
+
+    
+def random_undirected_graph(num_nodes, probability):
+    """
+    Founction to generate a set of random undirected graphs (note:
+    undirected graphs always have symmetric adjacency matrix, i.e. if
+    there is an edge between (i,j) then there's an edge between (j,i))
+
+    Args:
+        num_nodes (int): number of nodes to create
+        probability (float): likelihood of 2 nodes being connected
+    Returns:
+        random_graphs (ugraph): undirected graph 
+    """
+    # start with an enpty dictionary
+    random_graph = {}
+    # populate the dictionary with the nodes and no edges yet
+    for node_idx in range(num_nodes):
+        random_graph[node_idx] = set([])
+    # step through each node
+    for node_outer in range(num_nodes):
+       # loop through all nodes other than self
+        for node_inner in range(node_outer + 1, num_nodes):
+            if random.random() < probability:
+                # ensure symmetry for adjacency
+                random_graph[node_outer].add(node_inner)
+                random_graph[node_inner].add(node_outer)
+    # all done
+    return random_graph
+ 
+def normal_in_degree_distribution(digraph):
+    """
+    Function to return a normalized in-degree distribution for a given
+    (un)directed graph
+    
+    Returns a dict with normalized in-degree values
+    """
+    # get the number of nodes in the digraph
+    num_nodes = float(len(digraph))
+    # get the in-degree distribution (not normalized)
+    in_degree_distro = in_degree_distribution(digraph)
+    #
+    normal_in_degree_dist_dict = {}
+    # step through the in-degree distribution and normalize
+    for node_key in in_degree_distro.keys():
+        # get the value, normalize and store
+        normal_in_degree_dist_dict[node_key] = float(in_degree_distro[node_key]) / num_nodes
+    #
+    return normal_in_degree_dist_dict
+
+def plot_digraph_loglog(digraph):
+    """
+    Function to plot a normalized digraph in loglog mode
+    """
+    # Let's organize the digraph into x and y data
+    points_list = sorted(digraph.items())
+    # remove 0 in_degrees from the points_list to avoid log(0)
+    del points_list[0]
+    #
+    x, y = zip(*points_list)
+    #
+    # Now let's set up the plotting area
+    fig, ax = plt.subplots(figsize=(16, 10))
+    fig.suptitle('Log/Log plot of in_degree distribution for the DPA graph')
+    ax.scatter(x, y)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('in_degree')
+    ax.set_ylabel('Fraction of Nodes')
+    plt.show()
+
+def plot_ugraph_compare_three(network_resilience, er_resilience, upa_resilience):
+    """
+    Plot three line graphs depicting the resilience under a random order attack on
+    - computer network (pre-defined)
+    - ER algorithm generated network graph
+    - DPA algorithm generated network graph
+
+    Args:
+        network_resilience (list): remaining largest connected component
+        er_resilience (list): remaining largest connected component
+        upa_resilience (list): remaining largest connected component
+    """
+    x_axis = list(range(len(network_resilience)))
+    print
+    #
+    fig, ax = plt.subplots(figsize=(16, 10))
+    fig.suptitle('Comparison of graph resilience for random order attack')
+    ax.plot(x_axis, network_resilience, '-b', label='Computer Network')
+    ax.plot(x_axis, er_resilience, '-r', label='ER synthetic; p = 0.004')
+    ax.plot(x_axis, upa_resilience, '-g', label='UPA synthetic; m = 3')
+    ax.set_xlabel('Number of nodes removed')
+    ax.set_ylabel('Size of larges connected component')
+    ax.legend()
+    plt.show()
+    
+    
+def make_upa_graph(num_nodes, start_nodes):
+    """
+    Function to implement the UPA algorithm, creating a synthetic directed graph
+    
+    The process creates a graph of start_nodes nodes, which is complete (i.e. all
+    edges that are possible <no self-loops> are in place). 
+    
+    Then num_nodes - start_nodes
+    nodes are added with each new node with the following probability:
+    (indeg(node) + 1)/(total in-degree + )
+
+    Args:
+        num_nodes (_type_): _description_
+        start_nodes (_type_): _description_
+    """
+    # create the start graph that is complete
+    upa_graph = make_complete_ugraph(start_nodes)
+    #print("make_upa_graph : complete graph edges : ", total_in_degrees(upa_graph))
+    # make the additional nodes
+    for node_idx in range(start_nodes, num_nodes):
+        ttlindegs = total_in_degrees(upa_graph)
+        #print('node: ', node_idx, 'Total edges : ', ttlindegs)
+        #
+        upa_length = len(upa_graph)
+        #print(node_idx, dpa_length, ttlindegs, ttlindegs // dpa_length)
+        #
+        probability_dict = {}
+        cumulative_probability = 0.0
+        # calculate the probability of selection for all nodes in dpa_graph
+        for node in upa_graph.keys():
+            node_indeg = len(upa_graph[node])
+            selection_prob = (node_indeg + 1)/((2.0 * ttlindegs) + upa_length)
+            cumulative_probability += selection_prob
+            #print("node #", node, " selection_prob : ", cumulative_probability)
+            probability_dict[cumulative_probability] = node
+        #
+        probability_list = sorted(probability_dict.items())
+        #print("probability_list : ", probability_list)
+        #
+        upa_graph[node_idx] = set([])
+        for _ in range(start_nodes):
+            #
+            prob_value = random.random()
+            prob_rslt = find_less_than_dict(probability_list, prob_value)
+            # add node to set of connected nodes (note: undirected needs both)
+            upa_graph[(prob_rslt[1])].add(node_idx)
+            #print("Node ", node_idx, " prob_rslt[1] ", prob_rslt[1])
+            upa_graph[node_idx].add(prob_rslt[1])
+        # added all the edges to the set, so add it to the digraph
+        
+        # print("edges : ", new_edges)
+    #
+    return upa_graph
+
 def compute_resilience(ugraph, attack_order):
     """
     Function to comupute the resilience of a network to removal of nodes in attack_order
@@ -279,25 +474,31 @@ def compute_resilience(ugraph, attack_order):
     #
     return network_max_cc
  
-ngraf = load_graph(NETWORK_URL)
-print("Max CC : ", largest_cc_size(ngraf))
-#print("Edges in ngraf : ", compute_in_degrees(ngraf))
-print("Edges in ngraf : ", total_in_degrees(ngraf))
+net_graf = load_graph(NETWORK_URL)
+print("Max CC : ", largest_cc_size(net_graf))
+print("Edges in ngraf : ", total_in_degrees(net_graf))
 #
-# Testing area
-ugraf = random_undirected_graphs(1239, 0.004)
-#print("Undirected graph : ", ugraf)
+num_nodes = 1239
+er_probability = 0.004
+num_starter = 3
+#
+er_graf = random_undirected_graph(num_nodes, er_probability)
+print("Max CC : ", largest_cc_size(er_graf))
+print("Edges in ER graph : ", total_in_degrees(er_graf))
+#
+upa_graf = make_upa_graph(num_nodes, num_starter)
+print("Max CC : ", largest_cc_size(upa_graf))
+print("Edges in UPA graph : ", total_in_degrees(upa_graf))
 
-visits = bfs_visited(ugraf, 5)
-#print("bfs_visited for node ", 5, " : ", visits)
-ccomps = cc_visited(ugraf)
-print("Edges in ugraf : ", total_in_degrees(ugraf))
+net_attack = random_order(net_graf)
+net_resilience = compute_resilience(net_graf, net_attack)
+er_attack = random_order(er_graf)
+er_resilience = compute_resilience(er_graf, er_attack)
+upa_attack = random_order(upa_graf)
+upa_resilience = compute_resilience(upa_graf, upa_attack)
+#
+#print(net_resilience)
+#print(er_resilience)
+#print(upa_resilience)
 
-#print("Connected components : ", ccomps)
-print("Max CC : ", largest_cc_size(ugraf))
-
-
-
-
-
-
+plot_ugraph_compare_three(net_resilience, er_resilience, upa_resilience)
