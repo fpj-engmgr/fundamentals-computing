@@ -48,7 +48,6 @@ def targeted_order(ugraph):
     """
     # copy the graph
     new_graph = copy_graph(ugraph)
-    
     order = []    
     while len(new_graph) > 0:
         max_degree = -1
@@ -56,14 +55,53 @@ def targeted_order(ugraph):
             if len(new_graph[node]) > max_degree:
                 max_degree = len(new_graph[node])
                 max_degree_node = node
-        
+        # debug check to see which nodes have the max_degree_node in them
         neighbors = new_graph[max_degree_node]
         new_graph.pop(max_degree_node)
+        #
         for neighbor in neighbors:
             new_graph[neighbor].remove(max_degree_node)
 
         order.append(max_degree_node)
     return order
+
+def fast_targeted_order(ugraph):
+    """
+    Compute a targeted attack order consisting of maximal degree
+    
+    Optimized implementation
+
+    Args:
+        ugraph (dict): undirected graph representing a network
+
+    Returns:
+        attack_order (list): list of nodes to attack in order of maximum impact to least impact
+    """
+    new_graph = copy_graph(ugraph)
+    num_nodes = len(new_graph)
+    degree_sets = {}
+    for degree in range(num_nodes):
+        degree_sets[degree] = set([])
+    #
+    for node in range(num_nodes):
+        degree = len(new_graph[node])
+        degree_sets[degree].add(node)
+    #
+    attack_order = []
+    #
+    for degree in range(num_nodes - 1, -1, -1):
+        while len(degree_sets[degree]) > 0:
+            node = degree_sets[degree].pop()
+            # now update all the neighbors of node to lower their degree
+            for neighbor in new_graph[node]:
+                deg = len(new_graph[neighbor])
+                #
+                degree_sets[deg].remove(neighbor)
+                degree_sets[deg - 1].add(neighbor)
+            attack_order.append(node)
+            delete_node(new_graph, node)   
+    #
+    return attack_order
 
 ############################################
 # Helper functions
@@ -292,7 +330,6 @@ def make_complete_ugraph(num_nodes):
     #
     return ugraph
 
-    
 def random_undirected_graph(num_nodes, probability):
     """
     Founction to generate a set of random undirected graphs (note:
@@ -380,14 +417,38 @@ def plot_ugraph_compare_three(network_resilience, er_resilience, upa_resilience)
     fig, ax = plt.subplots(figsize=(16, 10))
     fig.suptitle('Comparison of graph resilience for random order attack')
     ax.plot(x_axis, network_resilience, '-b', label='Computer Network')
-    ax.plot(x_axis, er_resilience, '-r', label='ER synthetic; p = 0.004')
-    ax.plot(x_axis, upa_resilience, '-g', label='UPA synthetic; m = 3')
+    ax.plot(x_axis, er_resilience, '-g', label='ER synthetic; p = 0.004')
+    ax.plot(x_axis, upa_resilience, '-r', label='UPA synthetic; m = 3')
     ax.set_xlabel('Number of nodes removed')
     ax.set_ylabel('Size of larges connected component')
     ax.legend()
     plt.show()
-    
-    
+
+def plot_ugraph_compare_targeted(network_resilience, er_resilience, upa_resilience):
+    """
+    Plot three line graphs depicting the resilience under a random order attack on
+    - computer network (pre-defined)
+    - ER algorithm generated network graph
+    - DPA algorithm generated network graph
+
+    Args:
+        network_resilience (list): remaining largest connected component
+        er_resilience (list): remaining largest connected component
+        upa_resilience (list): remaining largest connected component
+    """
+    x_axis = list(range(len(network_resilience)))
+    print
+    #
+    fig, ax = plt.subplots(figsize=(16, 10))
+    fig.suptitle('Comparison of graph resilience for targeted order attack')
+    ax.plot(x_axis, network_resilience, '-b', label='Computer Network')
+    ax.plot(x_axis, er_resilience, '-g', label='ER synthetic; p = 0.004')
+    ax.plot(x_axis, upa_resilience, '-r', label='UPA synthetic; m = 3')
+    ax.set_xlabel('Number of nodes removed')
+    ax.set_ylabel('Size of larges connected component')
+    ax.legend()
+    plt.show()
+
 def make_upa_graph(num_nodes, start_nodes):
     """
     Function to implement the UPA algorithm, creating a synthetic directed graph
@@ -454,7 +515,7 @@ def compute_resilience(ugraph, attack_order):
             after each attack 
     """
     # make a copy of ugraph (so we don't mess with it)
-    un_graph = ugraph.copy()
+    un_graph = copy_graph(ugraph)
     # First entry is the current state of connectivity
     network_max_cc = []
     #
@@ -473,10 +534,15 @@ def compute_resilience(ugraph, attack_order):
         # print("c_r: ", un_graph)
     #
     return network_max_cc
- 
+
+#
+# main code
+# 
 net_graf = load_graph(NETWORK_URL)
 print("Max CC : ", largest_cc_size(net_graf))
 print("Edges in ngraf : ", total_in_degrees(net_graf))
+#for node in net_graf:
+#    print(node, net_graf[node])
 #
 num_nodes = 1239
 er_probability = 0.004
@@ -501,4 +567,20 @@ upa_resilience = compute_resilience(upa_graf, upa_attack)
 #print(er_resilience)
 #print(upa_resilience)
 
-plot_ugraph_compare_three(net_resilience, er_resilience, upa_resilience)
+#plot_ugraph_compare_three(net_resilience, er_resilience, upa_resilience)
+
+net_targets = targeted_order(net_graf)
+#print("net_targets :", net_targets)
+er_targets = targeted_order(er_graf)
+#print("er_targets :", er_targets)
+upa_targets = targeted_order(upa_graf)
+print("upa_targets :", upa_targets)
+upa_fast_targets = fast_targeted_order(upa_graf)
+print("upa_fast_targets : ", upa_fast_targets)
+
+#net_tgt_resilience = compute_resilience(net_graf, net_targets)
+#er_tgt_resilience = compute_resilience(er_graf, er_targets)
+#upa_tgt_resilience = compute_resilience(upa_graf, upa_targets)
+
+#plot_ugraph_compare_targeted(net_tgt_resilience, er_tgt_resilience, upa_tgt_resilience)
+
