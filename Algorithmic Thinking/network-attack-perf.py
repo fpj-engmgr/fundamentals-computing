@@ -290,7 +290,7 @@ tgt_times = []
 fast_tgt_times = []
 x_axis = []
 start_nodes = 5
-for num_nodes in range(10, 5000, 10):
+for num_nodes in range(10, 1000, 10):
     x_axis.append(num_nodes)
     test_graph = make_upa_graph(num_nodes, start_nodes)
     #
