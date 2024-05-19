@@ -1,17 +1,21 @@
-    """
+"""
     cancer-clustering
     
     This program takes cancer rate statistical data and clusters this data to
     plot incidence by area
-    """
-    
-    """
-Cluster class for Module 3
 """
-
 import math
+import matplotlib.pyplot as plt
+import numpy as np
 
+# constants
+DIRECTORY = "/Users/fpj/Development/python/fundamentals-computing/algorithmic-thinking/data/"
+MAP_URL = DIRECTORY + "data_clustering/USA_Counties.png"
+DATA_3108_URL = DIRECTORY + "data_clustering/unifiedCancerData_3108.csv"
 
+"""
+    Cluster class for Module 3
+"""
 class Cluster:
     """
     Class for creating and merging clusters of counties
@@ -92,7 +96,7 @@ class Cluster:
     def merge_clusters(self, other_cluster):
         """
         Merge one cluster into another
-        The merge uses the relatively populations of each
+        The merge uses the relative populations of each
         cluster in computing a new center and risk
         
         Note that this method mutates self
@@ -137,11 +141,94 @@ class Cluster:
             singleton_distance = self.distance(singleton_cluster)
             total_error += (singleton_distance ** 2) * singleton_cluster.total_population()
         return total_error
-            
-        
-            
+"""
+    Helper functions
+"""
+def load_cancer_data(file_name):
+    """
+    Load data from unifiedCancerData spreadsheet and return list of clusters
+    """
+    cancer_cluster_list = []
+    #
+    data_file = open(file_name)
+    data_text = data_file.read()
+    data_lines = data_text.split('\n')
+    data_lines = data_lines[ : -1]
+    #
+    print("load_cancer_data read in ", len(data_lines), " records")
+    #
+    for line in data_lines:
+        fields = line.split(',')
+        fips_code = int(fields[0])
+        hori_cntr = float(fields[1])
+        vert_cntr = float(fields[2])
+        tot_popul = int(fields[3])
+        aver_risk = float(fields[4])
+        #
+        cancer_cluster_list.append(Cluster(fips_code, hori_cntr, vert_cntr, tot_popul, aver_risk))
+    #
+    return cancer_cluster_list
 
-        
+
+
+"""
+    Closest pair functions
+"""    
+def slow_closest_pair(cluster_list):
+    """
+    Find the closest pair of clusters among a list of clusters using the
+    SlowClosestPair algorithm
+
+    Args:
+        cluster_list (list): A list of points (x, y) representing the center of each cluster
+    Returns:
+        closestpair (tuple): a tuple consisting of (dist, idx1, idx2), where idx1 and idx2 are
+            the indices of the two closest clusters
+    """
+    # set our starting distance and indices
+    closest_pair = (float('inf'), -1, -1)
+    #
+    num_clusters = len(cluster_list)
+    #
+    for idx_u in range(num_clusters):
+        for idx_v in range(num_clusters):
+            if idx_u == idx_v:
+                continue
+            distance = cluster_list[idx_u].distance(cluster_list[idx_v])
+            # print("debug - distance ", distance, "indices ", idx_u, idx_v)
+            #
+            if distance < closest_pair[0]:
+                closest_pair = (distance, idx_u, idx_v)
+    #
+    return closest_pair
     
     
-            
+def fast_closest_pair(cluster_list):
+    """
+    Find the closest pair of clusters among a list of clusters using the
+    FastClosestPair algorithm
+
+    Args:
+        cluster_list (list): A list of points (x, y) representing the center of each cluster
+    Returns:
+        closestpair (tuple): a tuple consisting of (dist, idx1, idx2), where idx1 and idx2 are
+            the indices of the two closest clusters
+    """
+    
+#
+# Test area
+#
+# Load all the data
+#
+cancer_data = load_cancer_data(DATA_3108_URL)
+# create a set of test points
+#
+short_list = []
+for idx in range(10):
+    short_list.append(cancer_data[idx])
+#
+print(short_list)
+#
+neighbor_pair = slow_closest_pair(short_list)
+#
+print("neighbor_pair : ", neighbor_pair)
