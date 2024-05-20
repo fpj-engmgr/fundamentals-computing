@@ -170,7 +170,6 @@ def load_cancer_data(file_name):
     return cancer_cluster_list
 
 
-
 """
     Closest pair functions
 """    
@@ -180,7 +179,7 @@ def slow_closest_pair(cluster_list):
     SlowClosestPair algorithm
 
     Args:
-        cluster_list (list): A list of points (x, y) representing the center of each cluster
+        cluster_list (list): A list of Cluster objects
     Returns:
         closestpair (tuple): a tuple consisting of (dist, idx1, idx2), where idx1 and idx2 are
             the indices of the two closest clusters
@@ -190,6 +189,7 @@ def slow_closest_pair(cluster_list):
     #
     num_clusters = len(cluster_list)
     #
+    print("debug : slow ", num_clusters)
     for idx_u in range(num_clusters):
         for idx_v in range(num_clusters):
             if idx_u == idx_v:
@@ -200,21 +200,87 @@ def slow_closest_pair(cluster_list):
             if distance < closest_pair[0]:
                 closest_pair = (distance, idx_u, idx_v)
     #
+    print("debug: slow ", closest_pair)
     return closest_pair
     
+def closest_pair_strip(cluster_list, horiz_center, half_width):
+    """
+    Helper function to compute the closest pair of clusters in a vertical strip
     
-def fast_closest_pair(cluster_list):
+    Input: cluster_list is a list of clusters produced by fast_closest_pair
+    horiz_center is the horizontal position of the strip's vertical center line
+    half_width is the half the width of the strip (i.e; the maximum horizontal distance
+    that a cluster can lie from the center line)
+
+    Output: tuple of the form (dist, idx1, idx2) where the centers of the clusters
+    cluster_list[idx1] and cluster_list[idx2] lie in the strip and have minimum distance dist.       
+    """
+    near_cluster_list = []
+    #
+    for cluster in cluster_list:
+        if math.fabs(cluster.horiz_center() - horiz_center) < half_width:
+            near_cluster_list.append(cluster)
+    # sort the indices in S in non-decreasing vertical coordinate order
+    near_cluster_list.sort(key = lambda cluster: cluster.vert_center())
+    #
+    num_near_clusters = len(near_cluster_list)
+    #
+    closest_pair = (float('inf'), -1, -1)
+    #
+    for idx_u in range(0, num_near_clusters - 2):
+        for idx_v in range(idx_u + 3, num_near_clusters - 1):
+            distance_uv = cluster_list[idx_u].distance(cluster_list[idx_v])
+            if distance_uv[0] < closest_pair[0]:
+                closest_pair = (distance_uv, idx_u, idx_v)
+    #
+    return closest_pair
+    
+def fast_closest_pair(sorted_cluster_list):
     """
     Find the closest pair of clusters among a list of clusters using the
     FastClosestPair algorithm
 
     Args:
-        cluster_list (list): A list of points (x, y) representing the center of each cluster
+        sorted_cluster_list (list): A sorted list of Cluster objects
     Returns:
         closestpair (tuple): a tuple consisting of (dist, idx1, idx2), where idx1 and idx2 are
             the indices of the two closest clusters
     """
-    
+    num_clusters = len(sorted_cluster_list)
+    #
+    if num_clusters <= 3:
+        closest_pair = slow_closest_pair(sorted_cluster_list)
+        print("debug(fast) num_clusters :", num_clusters, closest_pair)
+        print("debug(fast) num_clusters <= 3 :", sorted_cluster_list)
+    else:
+        # find the mid-point in the list
+        #print("debugsy : ", num_clusters)
+        half_num_clusters = num_clusters // 2
+        print("debug : half/full", half_num_clusters, "/", num_clusters)
+        # split into upper and lower lists
+        lower_sorted_cluster_list = sorted_cluster_list[:half_num_clusters]
+        upper_sorted_cluster_list = sorted_cluster_list[half_num_clusters:]
+        #print("debug (upper/lower) ", len(upper_sorted_cluster_list), len(lower_sorted_cluster_list))
+        # recurse over both the lower and upper halves of the list
+        lower_closest_pair = fast_closest_pair(lower_sorted_cluster_list)
+        upper_closest_pair = fast_closest_pair(upper_sorted_cluster_list)
+        # see which half came up with the closest cluster
+        if lower_closest_pair[0] < upper_closest_pair[0]:
+            closest_pair = lower_closest_pair
+            print("lower is closer : ", closest_pair)
+        else:
+            closest_pair = upper_closest_pair
+            print("upper is closer : ", closest_pair)
+        # find the center between our original list mid-point pair
+        mid_point = (sorted_cluster_list[half_num_clusters -1].horiz_center() + 
+                     sorted_cluster_list[half_num_clusters].horiz_center()) / 2.0
+        # get the distance between this pair
+        vert_slice_pair = closest_pair_strip(sorted_cluster_list, mid_point, closest_pair[0])
+        # if the mid-point pair produced the lower distance, then that's the winner
+        if closest_pair[0] > vert_slice_pair[0]:
+            closest_pair = vert_slice_pair
+    #
+    return closest_pair
 #
 # Test area
 #
@@ -223,12 +289,30 @@ def fast_closest_pair(cluster_list):
 cancer_data = load_cancer_data(DATA_3108_URL)
 # create a set of test points
 #
-short_list = []
+slow_short_list = []
 for idx in range(10):
-    short_list.append(cancer_data[idx])
+    slow_short_list.append(cancer_data[idx])
 #
-print(short_list)
+for idx in range(10):
+    print(slow_short_list[idx])
 #
-neighbor_pair = slow_closest_pair(short_list)
+slow_neighbor_pair = slow_closest_pair(slow_short_list)
 #
-print("neighbor_pair : ", neighbor_pair)
+print("slow_closest_pair : ", slow_neighbor_pair)
+#
+# prep for fast_closest_pair
+#
+# get the test points again
+#
+fast_short_list = []
+for idx in range(10):
+    fast_short_list.append(cancer_data[idx])
+# sort the list by horizontal center
+fast_short_list.sort(key = lambda cluster: cluster.horiz_center())
+#
+for idx in range(10):
+    print(fast_short_list[idx])
+#
+fast_neighbor_pair = fast_closest_pair(fast_short_list)
+#
+print("fast_closest_pair : ", fast_neighbor_pair)
