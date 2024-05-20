@@ -290,6 +290,39 @@ def fast_closest_pair(sorted_cluster_list):
             closest_pair = vert_slice_pair
     #
     return closest_pair
+######################################################################
+# Code for hierarchical clustering
+
+
+def hierarchical_clustering(cluster_list, num_clusters):
+    """
+    Compute a hierarchical clustering of a set of clusters
+    Note: the function may mutate cluster_list
+    
+    Input: List of clusters, integer number of clusters
+    Output: List of clusters whose length is num_clusters
+    """
+    
+    return []
+
+
+######################################################################
+# Code for k-means clustering
+
+    
+def kmeans_clustering(cluster_list, num_clusters, num_iterations):
+    """
+    Compute the k-means clustering of a set of clusters
+    Note: the function may not mutate cluster_list
+    
+    Input: List of clusters, integers number of clusters and number of iterations
+    Output: List of clusters whose length is num_clusters
+    """
+
+    # position initial clusters at the location of clusters with largest populations
+            
+    return []
+
 #
 # Test area
 #
@@ -302,14 +335,14 @@ slow_short_list = []
 for idx in range(10):
     slow_short_list.append(cancer_data[idx])
 #
-for idx in range(10):
-    print(slow_short_list[idx])
+#for idx in range(10):
+#    print(slow_short_list[idx])
 #
 slow_neighbor_pair = slow_closest_pair(slow_short_list)
 #
 print("slow_closest_pair : ", slow_neighbor_pair)
-print("slow_short_list-pair : ", slow_short_list[slow_neighbor_pair[1]])
-print("slow_short_list-pair : ", slow_short_list[slow_neighbor_pair[2]])
+#print("slow_short_list-pair : ", slow_short_list[slow_neighbor_pair[1]])
+#print("slow_short_list-pair : ", slow_short_list[slow_neighbor_pair[2]])
 #
 # prep for fast_closest_pair
 #
@@ -321,9 +354,39 @@ for idx in range(10):
 # sort the list by horizontal center
 fast_short_list.sort(key = lambda cluster: cluster.horiz_center())
 #
-for idx in range(10):
-    print(fast_short_list[idx])
+#for idx in range(10):
+#    print(fast_short_list[idx])
 #
 fast_neighbor_pair = fast_closest_pair(fast_short_list)
 #
 print("fast_closest_pair : ", fast_neighbor_pair)
+#
+# slow_long_list...
+data_3108_len = len(cancer_data)
+slow_long_list = []
+#
+for idx in range(data_3108_len):
+    slow_long_list.append(cancer_data[idx])
+#
+#for idx in range(10):
+#    print(slow_short_list[idx])
+#
+slow_long_pair = slow_closest_pair(slow_long_list)
+#
+print("slow_long_pair : ", slow_long_pair)
+#
+# fast
+#
+data_3108_len = len(cancer_data)
+fast_long_list = []
+#
+for idx in range(data_3108_len):
+    fast_long_list.append(cancer_data[idx])
+#
+#for idx in range(10):
+#    print(slow_short_list[idx])
+#
+fast_long_list.sort(key = lambda cluster: cluster.horiz_center())
+fast_long_pair = fast_closest_pair(fast_long_list)
+#
+print("fast_long_pair : ", fast_long_pair)
