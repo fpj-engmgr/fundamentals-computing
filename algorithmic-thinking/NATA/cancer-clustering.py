@@ -189,7 +189,7 @@ def slow_closest_pair(cluster_list):
     #
     num_clusters = len(cluster_list)
     #
-    print("debug : slow ", num_clusters)
+    #print("debug : slow ", num_clusters)
     for idx_u in range(num_clusters):
         for idx_v in range(num_clusters):
             if idx_u == idx_v:
@@ -200,7 +200,7 @@ def slow_closest_pair(cluster_list):
             if distance < closest_pair[0]:
                 closest_pair = (distance, idx_u, idx_v)
     #
-    print("debug: slow ", closest_pair)
+    #print("debug: slow ", closest_pair)
     return closest_pair
     
 def closest_pair_strip(cluster_list, horiz_center, half_width):
@@ -217,6 +217,8 @@ def closest_pair_strip(cluster_list, horiz_center, half_width):
     """
     near_cluster_list = []
     #
+    #print("debug: strip : ", horiz_center, half_width)
+    #
     for cluster in cluster_list:
         if math.fabs(cluster.horiz_center() - horiz_center) < half_width:
             near_cluster_list.append(cluster)
@@ -225,14 +227,21 @@ def closest_pair_strip(cluster_list, horiz_center, half_width):
     #
     num_near_clusters = len(near_cluster_list)
     #
+    #print("debug : strip : num_near_clusters ", num_near_clusters)
+   #for idx in range(num_near_clusters):
+        #print("debug : strip : near_cluster_list[idx] ", idx, near_cluster_list[idx])
+    #
     closest_pair = (float('inf'), -1, -1)
     #
     for idx_u in range(0, num_near_clusters - 2):
-        for idx_v in range(idx_u + 3, num_near_clusters - 1):
-            distance_uv = cluster_list[idx_u].distance(cluster_list[idx_v])
-            if distance_uv[0] < closest_pair[0]:
+        for idx_v in range(idx_u + 1, min(idx_u + 3, num_near_clusters - 1)):
+            distance_uv = near_cluster_list[idx_u].distance(near_cluster_list[idx_v])
+            #print("debug : strip : idx_u/idx_v/distance ", idx_u, idx_v, distance_uv)
+            if distance_uv < closest_pair[0]:
                 closest_pair = (distance_uv, idx_u, idx_v)
+            #print("debug : strip : closes_pair ", closest_pair)
     #
+    #print("debug : strip : result ", closest_pair)
     return closest_pair
     
 def fast_closest_pair(sorted_cluster_list):
@@ -250,13 +259,13 @@ def fast_closest_pair(sorted_cluster_list):
     #
     if num_clusters <= 3:
         closest_pair = slow_closest_pair(sorted_cluster_list)
-        print("debug(fast) num_clusters :", num_clusters, closest_pair)
-        print("debug(fast) num_clusters <= 3 :", sorted_cluster_list)
+        #print("debug(fast) num_clusters :", num_clusters, closest_pair)
+        #print("debug(fast) num_clusters <= 3 :", sorted_cluster_list)
     else:
         # find the mid-point in the list
         #print("debugsy : ", num_clusters)
         half_num_clusters = num_clusters // 2
-        print("debug : half/full", half_num_clusters, "/", num_clusters)
+        #print("debug : half/full", half_num_clusters, "/", num_clusters)
         # split into upper and lower lists
         lower_sorted_cluster_list = sorted_cluster_list[:half_num_clusters]
         upper_sorted_cluster_list = sorted_cluster_list[half_num_clusters:]
@@ -267,10 +276,10 @@ def fast_closest_pair(sorted_cluster_list):
         # see which half came up with the closest cluster
         if lower_closest_pair[0] < upper_closest_pair[0]:
             closest_pair = lower_closest_pair
-            print("lower is closer : ", closest_pair)
+            #print("lower is closer : ", closest_pair)
         else:
             closest_pair = upper_closest_pair
-            print("upper is closer : ", closest_pair)
+            #print("upper is closer : ", closest_pair)
         # find the center between our original list mid-point pair
         mid_point = (sorted_cluster_list[half_num_clusters -1].horiz_center() + 
                      sorted_cluster_list[half_num_clusters].horiz_center()) / 2.0
@@ -299,6 +308,8 @@ for idx in range(10):
 slow_neighbor_pair = slow_closest_pair(slow_short_list)
 #
 print("slow_closest_pair : ", slow_neighbor_pair)
+print("slow_short_list-pair : ", slow_short_list[slow_neighbor_pair[1]])
+print("slow_short_list-pair : ", slow_short_list[slow_neighbor_pair[2]])
 #
 # prep for fast_closest_pair
 #
