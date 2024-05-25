@@ -5,18 +5,15 @@
     plot incidence by area
 """
 import math
-import copy
-import matplotlib.pyplot as plt
-import numpy as np
 
 # constants
 DIRECTORY = "/Users/fpj/Development/python/fundamentals-computing/algorithmic-thinking/data/"
 MAP_URL = DIRECTORY + "data_clustering/USA_Counties.png"
 DATA_3108_URL = DIRECTORY + "data_clustering/unifiedCancerData_3108.csv"
 
-"""
-    Cluster class for Module 3
-"""
+##################################
+#    Cluster class for Module 3
+##################################
 class Cluster:
     """
     Class for creating and merging clusters of counties
@@ -140,9 +137,24 @@ class Cluster:
             singleton_distance = self.distance(singleton_cluster)
             total_error += (singleton_distance ** 2) * singleton_cluster.total_population()
         return total_error
-"""
-    Helper functions
-"""
+############################
+#    Helper functions
+############################
+def deepcopy(obj):
+    """
+    Helper function to create a deep copy of a list
+
+    Args:
+        obj (list): any list of items
+    Returns:
+        new_list (list) : a deep copy of orig_list
+    """
+    if isinstance(obj, dict):
+        return {deepcopy(key): deepcopy(value) for key, value in obj.items()}
+    if hasattr(obj, '__iter__'):
+        return type(obj)(deepcopy(item) for item in obj)
+    return obj
+
 def load_cancer_data(file_name):
     """
     Load data from unifiedCancerData spreadsheet and return list of clusters
@@ -161,81 +173,10 @@ def load_cancer_data(file_name):
                                                int(tokens[3]), float(tokens[4])))
     #
     return cancer_cluster_list
-    
-"""
-    Plotting helper functions
-"""
-def circle_area(pop):
-    """
-    Compute area of circle proportional to population
-    """
-    return math.pi * pop / (200.0 ** 2)
 
-
-def plot_clusters(data_table, cluster_list, draw_centers = False):
-    """
-    Create a plot of clusters of counties
-    """
-    fips_to_line = {}
-    for line_idx in range(len(data_table)):
-        fips_code = iter(data_table[line_idx].fips_codes())
-        #print("debug plot ", line_idx, fips_code, type(fips_code))
-        
-        fips_to_line[fips_code] = line_idx
-     
-    # Load map image
-    map_file = open(MAP_URL)
-    map_img = plt.imread(map_file, format ="png")
-
-    # Scale plot to get size similar to CodeSkulptor version
-    ypixels, xpixels, bands = map_img.shape
-    DPI = 60.0                  # adjust this constant to resize your plot
-    xinch = xpixels / DPI
-    yinch = ypixels / DPI
-    plt.figure(figsize=(xinch,yinch))
-    implot = plt.imshow(map_img)
-   
-    # draw the counties colored by cluster on the map
-    if not draw_centers:
-        for cluster_idx in range(len(cluster_list)):
-            cluster = cluster_list[cluster_idx]
-            cluster_color = COLORS[cluster_idx % len(COLORS)]
-            for fips_code in cluster.fips_codes():
-                line = data_table[fips_to_line[fips_code]]
-                plt.scatter(x = [line[1]], y = [line[2]], s =  circle_area(line[3]), lw = 1,
-                            facecolors = cluster_color, edgecolors = cluster_color)
-
-    # add cluster centers and lines from center to counties            
-    else:
-        for cluster_idx in range(len(cluster_list)):
-            cluster = cluster_list[cluster_idx]
-            cluster_color = COLORS[cluster_idx % len(COLORS)]
-            for fips_code in cluster.fips_codes():
-                line = data_table[fips_to_line[fips_code]]
-                plt.scatter(x = [line[1]], y = [line[2]], s =  circle_area(line[3]), lw = 1,
-                            facecolors = cluster_color, edgecolors = cluster_color, zorder = 1)
-        for cluster_idx in range(len(cluster_list)):
-            cluster = cluster_list[cluster_idx]
-            cluster_color = COLORS[cluster_idx % len(COLORS)]
-            cluster_center = (cluster.horiz_center(), cluster.vert_center())
-            for fips_code in cluster.fips_codes():
-                line = data_table[fips_to_line[fips_code]]
-                plt.plot( [cluster_center[0], line[1]],[cluster_center[1], line[2]], cluster_color, lw=1, zorder = 2)
-        for cluster_idx in range(len(cluster_list)):
-            cluster = cluster_list[cluster_idx]
-            cluster_color = COLORS[cluster_idx % len(COLORS)]
-            cluster_center = (cluster.horiz_center(), cluster.vert_center())
-            cluster_pop = cluster.total_population()
-            plt.scatter(x = [cluster_center[0]], y = [cluster_center[1]], s =  circle_area(cluster_pop), lw = 2,
-                        facecolors = "none", edgecolors = "black", zorder = 3)
-
-
-    plt.show()
-
-
-"""
-    Closest pair functions
-"""    
+############################
+#    Closest pair functions
+############################   
 def slow_closest_pair(cluster_list):
     """
     Find the closest pair of clusters among a list of clusters using the
@@ -278,43 +219,36 @@ def closest_pair_strip(cluster_list, horiz_center, half_width):
     Output: tuple of the form (dist, idx1, idx2) where the centers of the clusters
     cluster_list[idx1] and cluster_list[idx2] lie in the strip and have minimum distance dist.       
     """
-    # create a dict of FIPS codes with the index in cluster_list
-    fips_idx_dict = {}
+    index_list = []
     #
     for idx in range(len(cluster_list)):
-        fips_idx_dict[frozenset(cluster_list[idx].fips_codes())] = idx
+        #print("CPS : cluster_list[idx].horiz_center ", math.fabs(cluster_list[idx].horiz_center() - horiz_center), half_width)
+        if math.fabs(cluster_list[idx].horiz_center() - horiz_center) < half_width:
+            index_list.append([idx, cluster_list[idx]])
+    # sort list of indices in nondecreasing order of vertical coordinates
+    index_list.sort(key = lambda index_list: index_list[1].vert_center())
     #
-    near_cluster_list = []
-    #
-    for cluster in cluster_list:
-        if math.fabs(cluster.horiz_center() - horiz_center) < half_width:
-            near_cluster_list.append(cluster)
-    # sort the indices in S in non-decreasing vertical coordinate order
-    near_cluster_list.sort(key = lambda cluster: cluster.vert_center())
-    #
-    num_near_clusters = len(near_cluster_list)
-    #
-    #print("debug : strip : num_near_clusters ", num_near_clusters)
-   #for idx in range(num_near_clusters):
-        #print("debug : strip : near_cluster_list[idx] ", idx, near_cluster_list[idx])
+    index_list_len = len(index_list)
+    #print("CPS : |S| ", index_list_len)
+    #for idx in range(index_list_len):
+    #    print("CPS : idx/index_list[idx]", idx, "/", index_list[idx])
     #
     closest_pair = (float('inf'), -1, -1)
     #
-    for idx_u in range(0, num_near_clusters - 2):
-        for idx_v in range(idx_u + 1, min(idx_u + 3, num_near_clusters - 1)):
-            distance_uv = near_cluster_list[idx_u].distance(near_cluster_list[idx_v])
-            #print("debug : strip : idx_u/idx_v/distance ", idx_u, idx_v, distance_uv)
-            if distance_uv < closest_pair[0]:
-                closest_pair = (distance_uv, idx_u, idx_v)
+    for idx_u in range(0, index_list_len - 1):
+        for idx_v in range(idx_u + 1, min(idx_u + 4, index_list_len)):
+            distance_u_v = index_list[idx_u][1].distance(index_list[idx_v][1])
+            #print("CPS : distance_u_v ", distance_u_v, idx_u, idx_v)
+            if distance_u_v < closest_pair[0]:
+                closest_pair = (distance_u_v,
+                                index_list[idx_u][0],
+                                index_list[idx_v][0])
     #
-    fips_1 = frozenset(near_cluster_list[closest_pair[1]].fips_codes())
-    fips_2 = frozenset(near_cluster_list[closest_pair[2]].fips_codes())
-    #print("STRIP : result ", closest_pair)
-    #print("STRIP : dist/code1/code2 ", closest_pair[0], fips_1, fips_2)
-    #print("STRIP fips_idx fips_1/fips_2", fips_idx_dict.get(fips_1), fips_idx_dict.get(fips_2))
+    #print("CPS : closest_pair ", closest_pair)
+    if closest_pair[1] > closest_pair[2]:
+        closest_pair = (closest_pair[0], closest_pair[2], closest_pair[1])
     #
-    real_closest_pair = (closest_pair[0], fips_idx_dict.get(fips_1), fips_idx_dict.get(fips_2))
-    return real_closest_pair
+    return closest_pair
     
 def fast_closest_pair(sorted_cluster_list):
     """
@@ -386,9 +320,9 @@ def hierarchical_clustering(cluster_list, num_clusters):
     Output: List of clusters whose length is num_clusters
     """
     #
-    cluster_len = len(cluster_list)
+    #cluster_len = len(cluster_list)
     #
-    hier_cluster_set = copy.deepcopy(cluster_list)
+    hier_cluster_set = deepcopy(cluster_list)
     #
     while len(hier_cluster_set) > num_clusters:
         closest_pair = slow_closest_pair(hier_cluster_set)
@@ -406,7 +340,6 @@ def hierarchical_clustering(cluster_list, num_clusters):
 
 ######################################################################
 # Code for k-means clustering
-
     
 def kmeans_clustering(cluster_list, num_clusters, num_iterations):
     """
@@ -416,10 +349,42 @@ def kmeans_clustering(cluster_list, num_clusters, num_iterations):
     Input: List of clusters, integers number of clusters and number of iterations
     Output: List of clusters whose length is num_clusters
     """
-
-    # position initial clusters at the location of clusters with largest populations
-            
-    return []
+    cluster_list_len = len(cluster_list)
+    # create a list of num_clusters centers...try the first 3 in cluster_list
+    # alt: position initial centers at the location of clusters with largest populations
+    center_list = []
+    for idx in range(num_clusters):
+        center_list.append((cluster_list[idx].horiz_center(),
+                            cluster_list[idx].vert_center()))
+    #
+    for idx_i in range(num_iterations):
+        # create a set of num_clusters empty clusters
+        cluster_sets = []
+        for idx in range(num_clusters):
+            cluster_sets.append(Cluster(set([]), 0.0, 0.0, 0, 0.0))
+        # find the cluster closest to the center of the desired cluster
+        for idx_j in range(0, cluster_list_len):
+            # check distance of each cluster to each of the center_list entries
+            hor_ctr = cluster_list[idx_j].horiz_center()
+            ver_ctr = cluster_list[idx_j].vert_center()
+            closest_ctr_idx = -1
+            closest_ctr_dis = float('inf')
+            #
+            for idx_f in range(num_clusters):
+                #
+                dist_ctr = math.sqrt(((center_list[idx_f][0] - hor_ctr) ** 2) +
+                                     ((center_list[idx_f][1] - ver_ctr) ** 2))
+                if dist_ctr < closest_ctr_dis:
+                    closest_ctr_dis = dist_ctr
+                    closest_ctr_idx = idx_f
+            # we'll have the closest of the center's index, so merge in the cluster
+            cluster_sets[closest_ctr_idx].merge_clusters(cluster_list[idx_j])
+        # centers in the cluster_sets have been adjusted, so amend our center_list
+        for idx in range(num_clusters):
+            center_list[idx] = (cluster_sets[idx].horiz_center(),
+                                cluster_sets[idx].vert_center())
+    # after the iterations, we have our k clusters, so return them
+    return cluster_sets
 
 #
 # Test area
@@ -448,6 +413,14 @@ hier_slow_set = hierarchical_clustering(slow_short_list, 3)
 for idx in range(len(hier_slow_set)):
     print("hier slow : idx/hier_slow_set[idx] ", idx, hier_slow_set[idx])
 #
+print("")
+#
+kmeans_slow_set = kmeans_clustering(slow_short_list, 3, 5)
+#
+for idx in range(len(kmeans_slow_set)):
+    print("kmeans slow : idx/kmeans_slow_set[idx] ", idx, kmeans_slow_set[idx])
+#
+print("")
 # plot attempt
 #
 #plot_clusters(cancer_data, hier_slow_set, True)
@@ -470,10 +443,11 @@ fast_neighbor_pair = fast_closest_pair(fast_short_list)
 print("fast_closest_pair : ", fast_neighbor_pair)
 print("fast_short_list-pair : ", fast_short_list[fast_neighbor_pair[1]])
 print("fast_short_list-pair : ", fast_short_list[fast_neighbor_pair[2]])
-#
+print("")
+
 # slow_long_list...
-data_3108_len = len(cancer_data)
-slow_long_list = []
+#data_3108_len = len(cancer_data)
+#slow_long_list = []
 #
 #for idx in range(data_3108_len):
 #    slow_long_list.append(cancer_data[idx])
@@ -506,3 +480,19 @@ slow_long_list = []
 #print("fast_long_pair : ", fast_long_pair)
 #print("fast long result ", fast_long_list[fast_long_pair[1]])
 #print("fast long result ", fast_long_list[fast_long_pair[2]])
+#
+# Test it GOOD!
+#
+print("Testing closest_pair_strip")
+tst1_clusters = [Cluster(set([]), 0, 0, 1, 0), Cluster(set([]), 1, 0, 1, 0), Cluster(set([]), 2, 0, 1, 0), Cluster(set([]), 3, 0, 1, 0)]
+tst1_closest_pair = closest_pair_strip(tst1_clusters, 1.5, 1.0)
+print(tst1_closest_pair)
+#
+tst2_clusters = [Cluster(set([]), -4.0, 0.0, 1, 0), Cluster(set([]), 0.0, -1.0, 1, 0), Cluster(set([]), 0.0, 1.0, 1, 0), Cluster(set([]), 4.0, 0.0, 1, 0)]
+tst2_closest_pair = closest_pair_strip(tst2_clusters, 0.0, 4.123106)
+print(tst2_closest_pair)
+#
+tst3_clusters = [Cluster(set([]), 1.0, 0.0, 1, 0), Cluster(set([]), 4.0, 0.0, 1, 0), Cluster(set([]), 5.0, 0.0, 1, 0), Cluster(set([]), 7.0, 0.0, 1, 0)]
+tst3_closest_pair = fast_closest_pair(tst3_clusters)
+print(tst3_closest_pair)
+print("hello")
