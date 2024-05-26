@@ -16,6 +16,7 @@ import time
 DIR_FILES = "/Users/fpj/Development/python/fundamentals-computing/algorithmic-thinking/data/"
 MAP_URL = DIR_FILES + "data_clustering/USA_Counties.png"
 DATA_3108_URL = DIR_FILES + "data_clustering/unifiedCancerData_3108.csv"
+DATA_111_URL = DIR_FILES + "data_clustering/unifiedCancerData_111.csv"
 
 # Define colors for clusters.  Display a max of 16 clusters.
 COLORS = ['Aqua', 'Yellow', 'Blue', 'Fuchsia', 'Black', 'Green', 'Lime', 'Maroon', 'Navy', 'Olive', 'Orange', 'Purple', 'Red', 'Brown', 'Teal']
@@ -118,9 +119,36 @@ def plot_clusters(data_table, cluster_list, draw_centers = False):
 #############################
 #   Work area
 #
-#   Load the data
+#   Load the data for 3018 counties
 #
-cancer_data_table = load_data_table(DATA_3108_URL)
+#cancer_data_table = load_data_table(DATA_3108_URL)
+#cancer_cluster_list = []
+#
+#for idx in range(len(cancer_data_table)):
+#    cancer_cluster_list.append(alg_cluster.Cluster(set([cancer_data_table[idx][0]]),
+#                                                   cancer_data_table[idx][1],
+#                                                   cancer_data_table[idx][2],
+#                                                   cancer_data_table[idx][3],
+#                                                   cancer_data_table[idx][4]))
+#
+#start_time = time.time()
+#hier_cluster_list = soln.hierarchical_clustering(cancer_cluster_list, 15)
+#hier_time = time.time() - start_time
+#
+#plot_clusters(cancer_data_table, hier_cluster_list)
+#
+#start_time = time.time()
+#kmeans_cluster_list = soln.kmeans_clustering(cancer_cluster_list, 15, 5)
+#kmeans_time = time.time() - start_time
+#
+#plot_clusters(cancer_data_table, kmeans_cluster_list)
+#
+#print("hierarchical clustering time ", hier_time)
+#print("kmeans clustering time       ", kmeans_time)
+#
+#   Load the data for 111 counties
+#
+cancer_data_table = load_data_table(DATA_111_URL)
 cancer_cluster_list = []
 #
 for idx in range(len(cancer_data_table)):
@@ -131,16 +159,17 @@ for idx in range(len(cancer_data_table)):
                                                    cancer_data_table[idx][4]))
 #
 start_time = time.time()
-hier_cluster_list = soln.hierarchical_clustering(cancer_cluster_list, 15)
+hier_cluster_list = soln.hierarchical_clustering(cancer_cluster_list, 9)
 hier_time = time.time() - start_time
 #
-#plot_clusters(cancer_data_table, hier_cluster_list)
+plot_clusters(cancer_data_table, hier_cluster_list)
 #
 start_time = time.time()
-kmeans_cluster_list = soln.kmeans_clustering(cancer_cluster_list, 15, 5)
+kmeans_cluster_list = soln.kmeans_clustering(cancer_cluster_list, 9, 5)
 kmeans_time = time.time() - start_time
 #
-#plot_clusters(cancer_data_table, kmeans_cluster_list)
+plot_clusters(cancer_data_table, kmeans_cluster_list)
 #
 print("hierarchical clustering time ", hier_time)
 print("kmeans clustering time       ", kmeans_time)
+#
