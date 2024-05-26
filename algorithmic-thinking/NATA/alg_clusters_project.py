@@ -230,7 +230,7 @@ def hierarchical_clustering(cluster_list, num_clusters):
     hier_cluster_set = deepcopy(cluster_list)
     #
     while len(hier_cluster_set) > num_clusters:
-        closest_pair = slow_closest_pair(hier_cluster_set)
+        closest_pair = fast_closest_pair(hier_cluster_set)
         #
         cluster_i = hier_cluster_set[closest_pair[1]]
         cluster_j = hier_cluster_set[closest_pair[2]]

@@ -1,83 +1,39 @@
 """
-    cancer-clustering
-    
-    This program takes cancer rate statistical data and clusters this data to
-    plot incidence by area
+Some provided code for plotting the clusters using matplotlib
 """
-import alg_cluster
+
 import math
-import random
-import time
+import alg_cluster
+from urllib.request import urlopen
 import matplotlib.pyplot as plt
 
-#import urllib2
 
-###################################################
-# Code to load data tables
+# URLS for various important datasets
+#DIR_IMAGE = "http://commondatastorage.googleapis.com/codeskulptor-assets/"
+#MAP_URL = DIR_IMAGE + "data_clustering/USA_Counties.png"
 
-# URLs for cancer risk data tables of various sizes
-# Numbers indicate number of counties in data table
-"""
-DIRECTORY = "http://commondatastorage.googleapis.com/codeskulptor-assets/"
-DATA_3108_URL = DIRECTORY + "data_clustering/unifiedCancerData_3108.csv"
-DATA_896_URL = DIRECTORY + "data_clustering/unifiedCancerData_896.csv"
-DATA_290_URL = DIRECTORY + "data_clustering/unifiedCancerData_290.csv"
-DATA_111_URL = DIRECTORY + "data_clustering/unifiedCancerData_111.csv"
+DIR_FILES = "/Users/fpj/Development/python/fundamentals-computing/algorithmic-thinking/data/"
+MAP_URL = DIR_FILES + "data_clustering/USA_Counties.png"
+DATA_3108_URL = DIR_FILES + "data_clustering/unifiedCancerData_3108.csv"
 
+# Define colors for clusters.  Display a max of 16 clusters.
+COLORS = ['Aqua', 'Yellow', 'Blue', 'Fuchsia', 'Black', 'Green', 'Lime', 'Maroon', 'Navy', 'Olive', 'Orange', 'Purple', 'Red', 'Brown', 'Teal']
 
+###############################
+#   Helper functions
 def load_data_table(data_url):
-    
+    """
     Import a table of county-based cancer risk data
     from a csv format file
-    
-    cancer_cluster_list = []
-    #
-    data_file = urllib2.urlopen(data_url)
+    """
+    data_file = open(data_url)
     data = data_file.read()
     data_lines = data.split('\n')
     print("Loaded", len(data_lines), "data points")
-    #
-    for line in data_lines:
-        if len(line) > 0:
-            tokens = line.split(',')
-            cancer_cluster_list.append(alg_cluster.Cluster(set([tokens[0]]),
-                                                           float(tokens[1]),
-                                                           float(tokens[2]),
-                                                           int(tokens[3]),
-                                                           float(tokens[4])))
-    return cancer_cluster_list
-
-"""
-DIRECTORY = "/Users/fpj/Development/python/fundamentals-computing/algorithmic-thinking/data/"
-MAP_URL = DIRECTORY + "data_clustering/USA_Counties.png"
-DATA_3108_URL = DIRECTORY + "data_clustering/unifiedCancerData_3108.csv"
-
-def load_data_table(file_name):
-    """
-    Load data from unifiedCancerData spreadsheet and return list of clusters
-    """
-    cancer_cluster_list = []
-    #
-    data_file = open(file_name)
-    data = data_file.read()
-    data_lines = data.split('\n')
-    #
-    for line in data_lines:
-        if len(line) > 0:
-            tokens = line.split(',')
-            cancer_cluster_list.append(alg_cluster.Cluster(set([tokens[0]]),
-                                                           float(tokens[1]),
-                                                           float(tokens[2]),
-                                                           int(tokens[3]),
-                                                           float(tokens[4])))
-    #
-    print("Loaded", len(cancer_cluster_list), "data points")
-    #
-    return cancer_cluster_list
-
-############################
-#    Helper functions
-############################
+    data_tokens = [line.split(',') for line in data_lines]
+    return [[tokens[0], float(tokens[1]), float(tokens[2]), int(tokens[3]), float(tokens[4])] 
+            for tokens in data_tokens]
+    
 def deepcopy(obj):
     """
     Helper function to create a deep copy of a list
@@ -93,110 +49,71 @@ def deepcopy(obj):
         return type(obj)(deepcopy(item) for item in obj)
     return obj
 
-def random_point(range, mid_point = 0.0):
+def circle_area(pop):
     """
-    Helper function to generate a random floating point number in a range around a mid_point
+    Compute area of circle proportional to population
+    """
+    return math.pi * pop / (200.0 ** 2)
 
-    Args:
-        range (float): range across which numbers are to be generated
-        mid_point (float): mid-point of above range (default is 0.0)
-    Return:
-        tuple that is a 2-dimensional point
-    """
-    lower = mid_point - (range / 2.0)
-    #
-    return ((random.random() * range) + lower,
-            (random.random() * range) + lower)
-#
-def gen_random_clusters(num_clusters):
-    """
-    Function to create a list of clusters distributed across a random point within
-    the square with corners (+/- 1, +/- 1)
 
-    Args:
-        num_clusters (int): number of clusters to be generated
-    Return:
-        cluster_list (Cluster): list of clusters
+def plot_clusters(data_table, cluster_list, draw_centers = False):
     """
-    cluster_list = []
-    #
-    for _idx_ in range(num_clusters):
-        cluster_point = random_point(2.0)
-        cluster_list.append(alg_cluster.Cluster(set([]),
-                                                cluster_point[0],
-                                                cluster_point[1],
-                                                0,
-                                                0.0))
-    #
-    return cluster_list
-########################
-# Plotting functions
+    Create a plot of clusters of counties
+    """
 
-def plot_slow_fast_comparison(cluster_count, slow_tgt_times, fast_tgt_times):
-    """
-    Plot two line graphs depicting the performance of target_order and
-    fast_target_order
+    fips_to_line = {}
+    for line_idx in range(len(data_table)):
+        fips_to_line[data_table[line_idx][0]] = line_idx
+     
+    # Load map image
+    #map_file = urlopen(MAP_URL)
+    map_img = plt.imread(MAP_URL)
 
-    Args:
-        node_count (list):      number of nodes for timing
-        tgt_times (list):       execution time of target_order
-        fast_tgt_times (list):  execution time of fast target_order
-    """
-    #
-    fig, ax = plt.subplots(figsize=(16, 10))
-    fig.suptitle('Comparison of slow and fast closest pair performance')
-    ax.plot(cluster_count, slow_tgt_times, '-b', label='slow_closest_pair function')
-    ax.plot(cluster_count, fast_tgt_times, '-g', label='fast_closest_pair function')
-    #
-    ax.set_xlabel('Number of clusters')
-    ax.set_ylabel('Execution time')
-    ax.legend()
+    # Scale plot to get size similar to CodeSkulptor version
+    ypixels, xpixels, bands = map_img.shape
+    DPI = 60.0                  # adjust this constant to resize your plot
+    xinch = xpixels / DPI
+    yinch = ypixels / DPI
+    plt.figure(figsize=(xinch,yinch))
+    implot = plt.imshow(map_img)
+   
+    # draw the counties colored by cluster on the map
+    if not draw_centers:
+        for cluster_idx in range(len(cluster_list)):
+            cluster = cluster_list[cluster_idx]
+            cluster_color = COLORS[cluster_idx % len(COLORS)]
+            for fips_code in cluster.fips_codes():
+                line = data_table[fips_to_line[fips_code]]
+                plt.scatter(x = [line[1]], y = [line[2]], s =  circle_area(line[3]), lw = 1,
+                            facecolors = cluster_color, edgecolors = cluster_color)
+
+    # add cluster centers and lines from center to counties            
+    else:
+        for cluster_idx in range(len(cluster_list)):
+            cluster = cluster_list[cluster_idx]
+            cluster_color = COLORS[cluster_idx % len(COLORS)]
+            for fips_code in cluster.fips_codes():
+                line = data_table[fips_to_line[fips_code]]
+                plt.scatter(x = [line[1]], y = [line[2]], s =  circle_area(line[3]), lw = 1,
+                            facecolors = cluster_color, edgecolors = cluster_color, zorder = 1)
+        for cluster_idx in range(len(cluster_list)):
+            cluster = cluster_list[cluster_idx]
+            cluster_color = COLORS[cluster_idx % len(COLORS)]
+            cluster_center = (cluster.horiz_center(), cluster.vert_center())
+            for fips_code in cluster.fips_codes():
+                line = data_table[fips_to_line[fips_code]]
+                plt.plot( [cluster_center[0], line[1]],[cluster_center[1], line[2]], cluster_color, lw=1, zorder = 2)
+        for cluster_idx in range(len(cluster_list)):
+            cluster = cluster_list[cluster_idx]
+            cluster_color = COLORS[cluster_idx % len(COLORS)]
+            cluster_center = (cluster.horiz_center(), cluster.vert_center())
+            cluster_pop = cluster.total_population()
+            plt.scatter(x = [cluster_center[0]], y = [cluster_center[1]], s =  circle_area(cluster_pop), lw = 2,
+                        facecolors = "none", edgecolors = "black", zorder = 3)
+
+
     plt.show()
 
-#################################
-#   Execution run for fast_slow
-def fast_slow_run(max_clusters):
-    """
-    Run timing on slow and fast closest pair functions up to max_clusters
-
-    Args:
-        max_clusters (int): All the clusters we want!
-
-    """
-    x_axis = []
-    slow_times = []
-    fast_times = []
-    print("Starting random cluster timing run")
-    for idx in range(2, max_clusters):
-        x_axis.append(idx)
-        #
-        cluster_list = gen_random_clusters(idx)
-        #
-        # slow_closest_pair timing
-        #
-        start_time = time.time()
-        #
-        closest_pair = slow_closest_pair(cluster_list)
-        #
-        slow_time = time.time() - start_time
-        slow_times.append(slow_time)
-        #
-        # fast_closest_pair timing
-        #
-        start_time = time.time()
-        #
-        closest_pair = fast_closest_pair(cluster_list)
-        #
-        fast_time = time.time() - start_time
-        fast_times.append(fast_time)
-    #
-    # plot the slow/fast cloest pair comparison
-    #
-    plot_slow_fast_comparison(x_axis, slow_times, fast_times)
-    #
-    # That't it!
-    #
-    
 ############################
 #    Closest pair functions
 ############################   
@@ -360,13 +277,21 @@ def hierarchical_clustering(cluster_list, num_clusters):
     #
     return hier_cluster_set
 
+#############################
+#   Work area
 #
-# Work area
+#   Load the data
 #
-#fast_slow_run(200)
+cancer_data_table = load_data_table(DATA_3108_URL)
+cancer_cluster_list = []
 #
-# plotting of hierarchical clustering
+for idx in range(len(cancer_data_table)):
+    cancer_cluster_list.append(alg_cluster.Cluster(set([cancer_data_table[idx][0]]),
+                                                   cancer_data_table[idx][1],
+                                                   cancer_data_table[idx][2],
+                                                   cancer_data_table[idx][3],
+                                                   cancer_data_table[idx][4]))
 #
-cancer_clusters = load_data_table(DATA_3108_URL)
+hier_cluster_list = hierarchical_clustering(cancer_cluster_list, 15)
 #
-    
+plot_clusters(cancer_data_table, hier_cluster_list)
