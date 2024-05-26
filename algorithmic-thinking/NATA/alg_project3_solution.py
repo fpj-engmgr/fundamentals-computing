@@ -4,7 +4,25 @@
     
 """
 import math
-import alg_cluster
+import alg_cluster as alg
+
+##############################################
+#    Helper functions
+#
+def deepcopy(obj):
+    """
+    Helper function to create a deep copy of a list
+
+    Args:
+        obj (list): any list of items
+    Returns:
+        new_list (list) : a deep copy of orig_list
+    """
+    if isinstance(obj, dict):
+        return {deepcopy(key): deepcopy(value) for key, value in obj.items()}
+    if hasattr(obj, '__iter__'):
+        return type(obj)(deepcopy(item) for item in obj)
+    return obj
 
 ############################
 #    Closest pair functions
@@ -193,7 +211,7 @@ def kmeans_clustering(cluster_list, num_clusters, num_iterations):
         # create a set of num_clusters empty clusters
         cluster_sets = []
         for idx in range(num_clusters):
-            cluster_sets.append(Cluster(set([]), 0.0, 0.0, 0, 0.0))
+            cluster_sets.append(alg.Cluster(set([]), 0.0, 0.0, 0, 0.0))
         # find the cluster closest to the center of the desired cluster
         for idx_j in range(0, cluster_list_len):
             # check distance of each cluster to each of the center_list entries
