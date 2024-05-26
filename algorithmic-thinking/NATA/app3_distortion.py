@@ -177,25 +177,48 @@ for idx in range(len(cancer_data_table)):
                                                    cancer_data_table[idx][3],
                                                    cancer_data_table[idx][4]))
 #
-start_time = time.time()
-hier_cluster_list = soln.hierarchical_clustering(cancer_cluster_list, 9)
-hier_time = time.time() - start_time
+#start_time = time.time()
+#hier_cluster_list = soln.hierarchical_clustering(cancer_cluster_list, 9)
+#hier_time = time.time() - start_time
 #
-plot_clusters(cancer_data_table, hier_cluster_list)
+#plot_clusters(cancer_data_table, hier_cluster_list)
 #
-start_time = time.time()
-kmeans_cluster_list = soln.kmeans_clustering(cancer_cluster_list, 9, 5)
-kmeans_time = time.time() - start_time
+#start_time = time.time()
+#kmeans_cluster_list = soln.kmeans_clustering(cancer_cluster_list, 9, 5)
+#kmeans_time = time.time() - start_time
 #
-plot_clusters(cancer_data_table, kmeans_cluster_list)
+#plot_clusters(cancer_data_table, kmeans_cluster_list)
 #
-print("hierarchical clustering time ", hier_time)
-print("kmeans clustering time       ", kmeans_time)
+#print("hierarchical clustering time ", hier_time)
+#print("kmeans clustering time       ", kmeans_time)
 #
 # Compute distortion
 #
-hier_total_error = compute_distortion(hier_cluster_list, cancer_data_table)
-kmeans_total_error = compute_distortion(kmeans_cluster_list, cancer_data_table)
+#hier_total_error = compute_distortion(hier_cluster_list, cancer_data_table)
+#kmeans_total_error = compute_distortion(kmeans_cluster_list, cancer_data_table)
 #
-print("hierarchical distortion : ", "{:.5g}".format(hier_total_error))
-print("kmeans distortion       : ", "{:.5g}".format(kmeans_total_error))
+#print("hierarchical distortion : ", "{:.5g}".format(hier_total_error))
+#print("kmeans distortion       : ", "{:.5g}".format(kmeans_total_error))
+#
+# Loop through 111 county distortions
+# 
+clus_vals = []
+hier_vals = []
+kmeans_vals = []
+for cluster_count in range(6, 21, 2):
+    hier_list  = soln.hierarchical_clustering(cancer_cluster_list, cluster_count)
+    hier_error = compute_distortion(hier_list, cancer_data_table)
+    #
+    kmeans_list  = soln.kmeans_clustering(cancer_cluster_list, 9, 5)
+    kmeans_error = compute_distortion(kmeans_list, cancer_data_table)
+    #
+    clus_vals.append(cluster_count)
+    hier_vals.append(hier_error)
+    kmeans_vals.append(kmeans_error)
+#
+#print("count  : ", clus_vals)
+#print("hier   : ", hier_vals)
+#print("kmeans : ", kmeans_vals)
+#
+for idx in range(len(clus_vals)):
+    print(clus_vals[idx], " : ", "{:.5g}".format(hier_vals[idx]), "  ", "{:.5g}".format(kmeans_vals[idx]))
