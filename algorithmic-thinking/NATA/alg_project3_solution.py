@@ -235,3 +235,4 @@ def kmeans_clustering(cluster_list, num_clusters, num_iterations):
                                 cluster_sets[idx].vert_center())
     # after the iterations, we have our k clusters, so return them
     return cluster_sets
+
