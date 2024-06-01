@@ -37,10 +37,10 @@ def compute_global_alignment_scores(sequence_x, sequence_y, scoring_matrix):
     dp_table[0][0] = 0
     #
     for idx in range(1, x_len):
-        dp_table[idx][0] = scoring_matrix[DNA_MAP[sequence_x[idx - 1]]][DASH_VAL]
+        dp_table[idx][0] = dp_table[idx - 1][0] + scoring_matrix[DNA_MAP[sequence_x[idx - 1]]][DASH_VAL]
     #
     for idx in range(1, y_len):
-        dp_table[0][idx] = scoring_matrix[DASH_VAL][DNA_MAP[sequence_y[idx - 1]]]
+        dp_table[0][idx] = dp_table[0][idx - 1] + scoring_matrix[DASH_VAL][DNA_MAP[sequence_y[idx - 1]]]
     #
     for idx_i in range(1, x_len):
         for idx_j in range(1, y_len):
