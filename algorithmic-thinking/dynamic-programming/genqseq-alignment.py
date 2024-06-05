@@ -93,6 +93,49 @@ def compute_alignment_matrix(seq_x, seq_y, scoring_matrix, global_flag):
     #
     return dp_table
 
+def compute_global_alignment(sequence_x, sequence_y, scoring_matrix, dp_table):
+    """
+    Function to compute and return a global pairwise alignment
+
+    Args:
+        sequence_x (string): X sequence of nucleotides
+        sequence_y (string): Y sequence of nucleotides
+        scoring_matrix (matrix): scoring matrix for positional matching of nucleotides
+        dp_table (matrix): alignment matrix
+    Returns:
+        gpsa (string): global pairwise alignment of sequences X and Y
+    """
+    seq_x_len = len(sequence_x)
+    seq_y_len = len(sequence_y)
+    #
+    x_align = ''
+    y_align = ''
+    #
+    while (seq_x_len > 0) and (seq_y_len > 0):
+        row_char = sequence_x[seq_x_len - 1]
+        col_char = sequence_y[seq_y_len - 1]
+        if dp_table[seq_x_len][seq_y_len] == dp_table[seq_x_len - 1][seq_y_len - 1] + scoring_matrix[row_char][col_char]:
+            x_align = sequence_x[seq_x_len - 1] + x_align
+            y_align = sequence_y[seq_y_len - 1] + y_align
+            seq_x_len -= 1
+            seq_y_len -= 1
+        else:
+            if dp_table[seq_x_len][seq_y_len] == dp_table[seq_x_len - 1][seq_y_len] + scoring_matrix[row_char]['-']:
+                x_align = sequence_x[seq_x_len - 1] + x_align
+                y_align = '-' + y_align
+                seq_x_len -= 1
+            else:
+                x_align = '-' + x_align
+                y_align = sequence_y[seq_y_len - 1] + y_align
+                seq_y_len -= 1
+    # calculate the score
+    score = 0
+    #
+    for idx in range(len(x_align)):
+        score += scoring_matrix[x_align[idx]][y_align[idx]]
+    #
+    return (score, x_align, y_align)
+
 ###################################
 # quick test
 #
@@ -125,4 +168,17 @@ dpt2 = compute_alignment_matrix('ATG', 'ACG', scm2, False)
 #
 for row_num in range(len(dpt2)):
     print(row_num, ":", dpt2[row_num])
-    
+#
+seq_x = 'ACCTG-CA-C'
+seq_y = 'CGTGCTAGTC'
+#
+dpt3 = compute_alignment_matrix(seq_x, seq_y, scm2, True)
+#
+(score, x_prime, y_prime) = compute_global_alignment(seq_x, seq_y, scm2, dpt3)
+#
+print("X-prime : ", x_prime)
+print("Y-prime : ", y_prime)
+print("score   : ", score)
+#
+print("Test 4 : empty sequences... (global)")
+#
