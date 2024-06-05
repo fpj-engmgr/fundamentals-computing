@@ -111,7 +111,7 @@ def compute_global_alignment(sequence_x, sequence_y, scoring_matrix, dp_table):
     x_align = ''
     y_align = ''
     #
-    while (seq_x_len > 0) and (seq_y_len > 0):
+    while (seq_x_len != 0) and (seq_y_len != 0):
         row_char = sequence_x[seq_x_len - 1]
         col_char = sequence_y[seq_y_len - 1]
         if dp_table[seq_x_len][seq_y_len] == dp_table[seq_x_len - 1][seq_y_len - 1] + scoring_matrix[row_char][col_char]:
@@ -128,6 +128,17 @@ def compute_global_alignment(sequence_x, sequence_y, scoring_matrix, dp_table):
                 x_align = '-' + x_align
                 y_align = sequence_y[seq_y_len - 1] + y_align
                 seq_y_len -= 1
+    #
+    # copy the remainer from the longest sequence
+    while (seq_x_len != 0):
+        x_align = sequence_x[seq_x_len - 1] + x_align
+        y_align = '-' + y_align
+        seq_x_len -= 1
+    #
+    while (seq_y_len != 0):
+        x_align = '-' + x_align
+        y_align = sequence_y[seq_y_len - 1] + y_align
+        seq_y_len -= 1
     # calculate the score
     score = 0
     #
@@ -135,6 +146,64 @@ def compute_global_alignment(sequence_x, sequence_y, scoring_matrix, dp_table):
         score += scoring_matrix[x_align[idx]][y_align[idx]]
     #
     return (score, x_align, y_align)
+
+def compute_local_alignment(sequence_x, sequence_y, scoring_matrix, align_matrix):
+    """
+    Function to compute and return a global pairwise alignment
+
+    Args:
+        sequence_x (string): X sequence of nucleotides
+        sequence_y (string): Y sequence of nucleotides
+        scoring_matrix (matrix): scoring matrix for positional matching of nucleotides
+        align_matrix (matrix): alignment matrix
+    Returns:
+       (score, align_x, align_y): local pairwise alignment of sequences X and Y
+    """
+    # initalize X' and Y'
+    align_x = ''
+    align_y = ''
+    # find the entry in the alignment matrix that is the highest
+    max_val = -1
+    max_row = -1
+    max_col = -1
+    #
+    for row_idx in range(len(align_matrix)):
+        tst_val = max(align_matrix[row_idx])
+        if tst_val > max_val:
+            max_val = tst_val
+            max_row = row_idx
+            max_col = align_matrix[row_idx].index(max_val)
+    # start at the highest score row_col and go until our score is zero
+    while max_row != 0 and max_col != 0:
+        #
+        row_char = sequence_x[max_row - 1]
+        col_char = sequence_y[max_col - 1]
+        #
+        if align_matrix[max_row][max_col] == align_matrix[max_row - 1][max_col - 1] + scoring_matrix[row_char][col_char]:
+            align_x = sequence_x[max_row - 1] + align_x
+            align_y = sequence_y[max_col - 1] + align_y
+            max_row -= 1
+            max_col -= 1
+        else:
+            if align_matrix[max_row][max_col] == align_matrix[max_row - 1][max_col] + scoring_matrix[row_char]['-']:
+                align_x = sequence_x[max_row - 1] + align_x
+                align_y = '-' + align_y
+                max_row -= 1
+            else:
+                align_x = '-' + align_x
+                align_y = sequence_y[max_col - 1] + align_y
+                max_col -= 1
+        # if we encounter an alignment matrix entry of value 0, we're done
+        if align_matrix[max_row][max_col] == 0:
+            break
+    #
+    # calculate the score
+    score = 0
+    #
+    for idx in range(len(align_x)):
+        score += scoring_matrix[align_x[idx]][align_y[idx]]
+    #
+    return (score, align_x, align_y)
 
 ###################################
 # quick test
@@ -180,5 +249,104 @@ print("X-prime : ", x_prime)
 print("Y-prime : ", y_prime)
 print("score   : ", score)
 #
-print("Test 4 : empty sequences... (global)")
+print("Test 5 : compute_global_alignment")
+#
+scm5 = {'A': {'A': 2, 'C': 1, '-': 0, 'T': 1, 'G': 1},
+        'C': {'A': 1, 'C': 2, '-': 0, 'T': 1, 'G': 1},
+        '-': {'A': 0, 'C': 0, '-': 0, 'T': 0, 'G': 0},
+        'T': {'A': 1, 'C': 1, '-': 0, 'T': 2, 'G': 1},
+        'G': {'A': 1, 'C': 1, '-': 0, 'T': 1, 'G': 2}}
+dpt5 =  [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+         [0, 1, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+         [0, 1, 2, 3, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+         [0, 1, 2, 4, 4, 6, 7, 7, 7, 7, 7, 7, 7, 7],
+         [0, 1, 2, 4, 6, 6, 7, 9, 9, 9, 9, 9, 9, 9],
+         [0, 1, 2, 4, 6, 8, 8, 9, 11, 11, 11, 11, 11, 11]]
+seq5_x = 'ACTACT'
+seq5_y = 'GGACTGCTTCTGG'
+#
+(scr5, alx5, aly5) = compute_global_alignment(seq5_x, seq5_y, scm5, dpt5)
+#
+print("X-prime : ", alx5)
+print("Y-prime : ", aly5)
+print("score   : ", scr5)
+#
+print("Test 6 : compute_local_alignment")
+#
+scm6 = {'A': {'A': 2, 'C': 1, '-': 0, 'T': 1, 'G': 1},
+        'C': {'A': 1, 'C': 2, '-': 0, 'T': 1, 'G': 1},
+        '-': {'A': 0, 'C': 0, '-': 0, 'T': 0, 'G': 0},
+        'T': {'A': 1, 'C': 1, '-': 0, 'T': 2, 'G': 1},
+        'G': {'A': 1, 'C': 1, '-': 0, 'T': 1, 'G': 2}}
+dpt6 =  [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+         [0, 1, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+         [0, 1, 2, 3, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+         [0, 1, 2, 4, 4, 6, 7, 7, 7, 7, 7, 7, 7, 7],
+         [0, 1, 2, 4, 6, 6, 7, 9, 9, 9, 9, 9, 9, 9],
+         [0, 1, 2, 4, 6, 8, 8, 9, 11, 11, 11, 11, 11, 11]]
+seq6_x = 'ACTACT'
+seq6_y = 'GGACTGCTTCTGG'
+#
+(scr6, alx6, aly6) = compute_local_alignment(seq6_x, seq6_y, scm6, dpt6)
+#
+print("X-prime : ", alx6)
+print("Y-prime : ", aly6)
+print("score   : ", scr6)
+#
+print("Test 7 : compute_local_alignment")
+#
+scm7 = {'-': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1},
+        'a': {'-': -1, 'a': 2, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1},
+        'c': {'-': -1, 'a': -1, 'c': 2, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1},
+        'b': {'-': -1, 'a': -1, 'c': -1, 'b': 2, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1},
+        'e': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': 2, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1},
+        'd': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': 2, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1},
+        'g': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': 2, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1},
+        'f': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': 2, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'i': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': 2, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'h': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': 2, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1},
+        'k': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': 2, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'j': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': 2, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'm': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': 2, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'l': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': 2, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'o': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': 2, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'n': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': 2, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'q': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': 2, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'p': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': 2, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        's': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': 2, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'r': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': 2, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'u': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': 2, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        't': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': 2, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'w': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': 2, 'v': -1, 'y': -1, 'x': -1, 'z': -1}, 
+        'v': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': 2, 'y': -1, 'x': -1, 'z': -1}, 
+        'y': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': 2, 'x': -1, 'z': -1}, 
+        'x': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': 2, 'z': -1}, 
+        'z': {'-': -1, 'a': -1, 'c': -1, 'b': -1, 'e': -1, 'd': -1, 'g': -1, 'f': -1, 'i': -1, 'h': -1, 'k': -1, 'j': -1, 'm': -1, 'l': -1, 'o': -1, 'n': -1, 'q': -1, 'p': -1, 's': -1, 'r': -1, 'u': -1, 't': -1, 'w': -1, 'v': -1, 'y': -1, 'x': -1, 'z': 2}}
+#
+dpt7 = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 1, 1, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 3, 3, 5, 4, 3, 2, 1, 0, 0, 0], 
+        [0, 0, 0, 2, 2, 5, 7, 6, 5, 4, 3, 2, 1], 
+        [0, 0, 0, 1, 4, 4, 6, 6, 5, 4, 3, 2, 1], 
+        [0, 0, 0, 0, 3, 6, 6, 5, 5, 4, 3, 2, 1], 
+        [0, 0, 0, 0, 2, 5, 5, 8, 7, 6, 5, 4, 3], 
+        [0, 0, 0, 0, 1, 4, 4, 7, 10, 9, 8, 7, 6], 
+        [0, 0, 0, 0, 0, 3, 3, 6, 9, 9, 8, 7, 6], 
+        [0, 0, 0, 0, 0, 2, 2, 5, 8, 11, 10, 9, 8], 
+        [0, 0, 0, 0, 0, 1, 1, 4, 7, 10, 13, 12, 11]]
+#
+seq7_x = 'abddcdeffgh'
+seq7_y = 'aabcddefghij'
+#
+print("X : ", seq7_x)
+print("Y : ", seq7_y)
+#
+(scr7, alx7, aly7) = compute_local_alignment(seq7_x, seq7_y, scm7, dpt7)
+#
+print("X-prime : ", alx7)
+print("Y-prime : ", aly7)
+print("score   : ", scr7)
 #
